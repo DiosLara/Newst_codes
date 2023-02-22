@@ -3,7 +3,7 @@ import geopandas as gpd
 import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
-from Geolocalizacion_2.preparacion_datos.preparacion_inter_puntos import *
+from preparacion_datos.preparacion_inter_puntos import *
 from shapely.geometry import MultiPoint
 from tqdm import tqdm
 import shapely
@@ -24,7 +24,7 @@ def points_bounds(df, simplify=True):
     else:
         n = gpd.GeoSeries(geom.boundary)
     n = n.to_crs('epsg:3006')
-    distance_delta = int(n.geometry.length.unique())/(int(df.CLAVESXMANZANA))
+    distance_delta = int(n.geometry.length.unique())/(int(df.ESTIMADO))
     
     distances = np.arange(0, n.geometry.length.unique(), float(distance_delta))
     '''Aquí se aplica la interpolación'''
@@ -42,17 +42,17 @@ def points_polis(df):
         y si es muy pequeño. Apartir de esta lista marca limites que caen dentro del poligono
         distance_delta ==> genera puntos dentro del poligono 
     """
-    df.sort_values('CLAVESXMANZANA', ascending=False, inplace=True)
+    df.sort_values('ESTIMADO', ascending=False, inplace=True)
     df = df.to_crs('epsg:3006')
     
-    # df['CLAVESXMANZANA']=df['CLAVESXMANZANA'].astype(int)
+    # df['ESTIMADO']=df['ESTIMADO'].astype(int)
     ndb2= gpd.GeoDataFrame(columns={0})
     ndb= gpd.GeoDataFrame(columns={0})
 
     '''Se generan dos bases m1 y m2 para analizar 
     como se reparten los puntos sobre dos direcciones contrarias, y se debe asegurar que tengan la misma longitud'''
     
-    if (df.CLAVESXMANZANA!=1)[0]:
+    if (df.ESTIMADO!=1)[0]:
   
         
         if (df.geometry.convex_hull.area > df.geometry.area)[0]: 
@@ -155,7 +155,7 @@ def points_polis(df):
         
                 
                 
-    elif (df.CLAVESXMANZANA==1)[0]:
+    elif (df.ESTIMADO==1)[0]:
   
         
         ndb2= df
@@ -173,7 +173,7 @@ def simulacion_poli(chunks):
     for i ,cve in tqdm(enumerate(chunks['CVEGEO']),total = len(chunks)):
         df = chunks.loc[chunks['CVEGEO'].str.contains(cve)]
         
-        assert any(df['CLAVESXMANZANA']>0)
+        assert any(df['ESTIMADO']>0)
         df = prep.combinar_manzanas(df, llave='CVEGEO')
         df.reset_index(inplace=True)
         df.drop_duplicates('CVEGEO', inplace=True)
@@ -323,7 +323,7 @@ def task_chunks(chunks):
     for i ,cve in tqdm(enumerate(chunks['CVEGEO']),total = len(chunks)):
         df = chunks.loc[chunks['CVEGEO'].str.contains(cve)]
         
-        assert any(df['CLAVESXMANZANA']>=1)
+        assert any(df['ESTIMADO']>=1)
         df = combinar_manzanas(df, llave='CVEGEO')
         df.reset_index(inplace=True)
         df.drop_duplicates('CVEGEO', inplace=True)
@@ -396,7 +396,16 @@ def post_points_catastro(path_base, path_shp, funcion):
 
         Los chunks se obtienen a partir de los cores de la pc en que se ejecute este script
     """
-    test_igecem = prep.data_prep_catastro(path_base, path_shp)
+    if path_base is True:
+        test_igecem = prep.data_prep_catastro(path_base, path_shp)
+    else:
+        m_igecem = gpd.read_file(path_shp) ##Lee desde shp
+
+        m_igecem.crs= 4326 #m_igecem.to_crs(4326)
+        try:
+            m_igecem = m_igecem.loc[~m_igecem['manz'].astype(str).str.endswith('000')]
+        except: 
+            pass
     test_igecem_chunks =  np.array_split(test_igecem, os.cpu_count()) ##Aqui se especifica si se requiere un loc y los chunks
 
     df_concat = pd.DataFrame()
@@ -408,11 +417,11 @@ def post_points_catastro(path_base, path_shp, funcion):
     return df_concat
 
 if __name__ == "__main__":
-    PATH_BASE = r"C:\Users\ASUS\Documents\GobiernoEdomex\Agua\Padrón Agua - Toluca 20220202\ConcatenadoPrediaToluca.csv"
-    PATH_SHP  = r"C:\Users\ASUS\Documents\GobiernoEdomex\Agua\Padrón Agua - Toluca 20220202\ConcatenadoPrediaTolucashapes.shp"
+    PATH_BASE = float('Nan')
+    PATH_SHP  = r"C:\Users\dlara\Tamaulipas_shapes_2020.shp"
 
     df_final_catastro = post_points_catastro(PATH_BASE, PATH_SHP, task_chunks)
 
     print(df_final_catastro)    
 
-    df_final_catastro.to_csv(r'C:\Users\ASUS\Documents\GobiernoEdomex\Agua\Padrón Agua - Toluca 20220202\TOLUCA_PUNTOS.csv', encoding='utf-8-sig')
+    df_final_catastro.to_csv(r'C:\Users\dlara/Matamoros_puntos.csv', encoding='utf-8-sig')
