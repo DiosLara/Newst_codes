@@ -1,7 +1,7 @@
 import geopandas as gpd
 import pandas as pd
 from Geolocalizacion.separacion_domicilios.funciones_diccionarios import *
-from dataprep.clean import clean_lat_long
+
 from Geolocalizacion.separacion_domicilios.funciones_diccionarios import procesamiento_con_diccionarios 
 from tqdm import tqdm
 import concurrent.futures

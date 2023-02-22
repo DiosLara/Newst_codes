@@ -3,7 +3,7 @@ import geopandas as gpd
 import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
-from preparacion_datos.preparacion_inter_puntos import *
+from geoloc2.preparacion_datos.src import preparacion_inter_puntos
 from shapely.geometry import MultiPoint
 from tqdm import tqdm
 import shapely
@@ -397,7 +397,7 @@ def post_points_catastro(path_base, path_shp, funcion):
         Los chunks se obtienen a partir de los cores de la pc en que se ejecute este script
     """
     if path_base is True:
-        test_igecem = prep.data_prep_catastro(path_base, path_shp)
+        test_igecem = data_prep_catastro(path_base, path_shp)
     else:
         m_igecem = gpd.read_file(path_shp) ##Lee desde shp
 
@@ -405,7 +405,7 @@ def post_points_catastro(path_base, path_shp, funcion):
         try:
             m_igecem = m_igecem.loc[~m_igecem['manz'].astype(str).str.endswith('000')]
         except: 
-            pass
+            test_igecem= m_igecem
     test_igecem_chunks =  np.array_split(test_igecem, os.cpu_count()) ##Aqui se especifica si se requiere un loc y los chunks
 
     df_concat = pd.DataFrame()
