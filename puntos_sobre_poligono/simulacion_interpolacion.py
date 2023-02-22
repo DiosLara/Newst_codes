@@ -3,12 +3,12 @@ import geopandas as gpd
 import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
-from geoloc2.preparacion_datos.src import preparacion_inter_puntos
 from shapely.geometry import MultiPoint
 from tqdm import tqdm
 import shapely
 import concurrent.futures
-
+import os
+from preparacion_datos.src.preparacion_inter_puntos import prep
 '''Interpolación de puntos'''
 def _to_2d(x, y, z):
     return tuple(filter(None, [x, y]))
@@ -174,7 +174,8 @@ def simulacion_poli(chunks):
         df = chunks.loc[chunks['CVEGEO'].str.contains(cve)]
         
         assert any(df['ESTIMADO']>0)
-        df = prep.combinar_manzanas(df, llave='CVEGEO')
+        df = prep.prep.combinar_manzanas(df, llave='CVEGEO')
+        
         df.reset_index(inplace=True)
         df.drop_duplicates('CVEGEO', inplace=True)
         m2, m1 = points_polis(df)
