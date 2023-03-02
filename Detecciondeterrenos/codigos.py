@@ -3,6 +3,9 @@ import numpy as np
 from tkinter import filedialog
 from tkinter import *
 import shutil
+import rasterio
+# from osgeo import gdal
+import tqdm
 btn_down = False
 
 def get_points(im):
@@ -116,3 +119,24 @@ def etiquetar_imagenes(
                 file.write(yolo_F)
                 file.close()
                 print(f"archivo creado: {path_save}/+{str(cve)}.txt")
+
+def particionar_imagen (fp:str, parametro:int, ruta_salida:str, nombre_salida:str):
+    '''
+    (Function)
+        Esta funciona toma el archivo "fp" y lo particiona en n-elementos (imagenes) para tener fragmentos de la original
+        con un zoom siendo cuadradas
+    (Paramateres)
+        - fp: Ruta de acceso al archivo .tif (Obligatoriamente) 
+        - parametro: cantidad de pixeles que tomara para formar un cuadrado (fragmento)
+    '''
+    img = rasterio.open(fp)
+    print('Imagen leida.')
+    array = img.read()
+    four_images=[array[2],array[1],array[0],array[3]]
+    stacked_images = np.stack(four_images, axis=-1)
+    H,W,D=stacked_images.shape
+    z=0
+    for i in tqdm.tqdm(range(int(H/parametro))):
+        for j in range(int(W/parametro)):
+            array1=stacked_images[parametro*i:parametro*(i+1),parametro*j:parametro*(j+1)]
+            cv2.imwrite(ruta_salida+"/"+nombre_salida+str(i)+"_"+str(j)+".png",array1)
