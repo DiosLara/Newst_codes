@@ -7,6 +7,8 @@ from tqdm import tqdm
 import concurrent.futures
 from OracleIntfis.db_connection import OracleDB
 import os
+from scipy.spatial import cKDTree
+from shapely.geometry import Point
 
 '''Integración de todos los elementos necesarios para el prep de bases geo y con clave catastral'''
 
@@ -227,3 +229,25 @@ class prep:
         
 
         return(test_igecem)
+    
+
+
+
+def ckdnearest(gdA, gdB):
+    gdA.reset_index(drop=True, inplace=True)
+    gdB.reset_index(drop=True, inplace=True)
+    nA = np.array(list(gdA.geometry.apply(lambda x: (x.x, x.y))))
+    nB = np.array(list(gdB.geometry.apply(lambda x: (x.x, x.y))))
+    btree = cKDTree(nB)
+    dist, idx = btree.query(nA, k=1)
+    gdB_nearest = gdB.iloc[idx].drop(columns="geometry").reset_index(drop=True)
+
+    gdf = pd.concat(
+        [
+            gdA.reset_index(drop=True),
+            gdB_nearest,
+            pd.Series(dist, name='min_dist')
+        ],
+        axis=1)
+
+    return gdf

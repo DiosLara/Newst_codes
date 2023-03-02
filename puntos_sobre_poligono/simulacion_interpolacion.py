@@ -8,11 +8,32 @@ from tqdm import tqdm
 import shapely
 import concurrent.futures
 import os
-from preparacion_datos.src.preparacion_inter_puntos import prep
+# from preparacion_datos.src.preparacion_inter_puntos import prep
 '''Interpolación de puntos'''
 def _to_2d(x, y, z):
     return tuple(filter(None, [x, y]))
 
+### TODO: Pasar a la clase de prep
+def combinar_manzanas(base, llave='CVE_MUN', buffer=0.005) -> gpd.GeoSeries:
+    """
+    Lee un zip con archivos shape, une las geometrias existentes, y regresa el poligono resultante
+    """
+
+    # base = gpd.read_file(shp_file_zip, crs="EPSG:4326")
+
+    # base["union"] = 0
+    base.geometry = base.geometry.buffer(buffer)
+    base = base.dissolve(by=llave)
+
+    border = base.geometry.to_crs("EPSG:4326")
+    
+
+
+
+    # Nos aseguramos que el resultado sea un poligono, y no un multipoligono
+    # assert isinstance(border)
+
+    return base
 
 def points_bounds(df, simplify=True):
     '''Interpola puntos generados a partir de la proporción de claves sobre el polígono'''
