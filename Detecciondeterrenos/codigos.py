@@ -140,3 +140,27 @@ def particionar_imagen (fp:str, parametro:int, ruta_salida:str, nombre_salida:st
         for j in range(int(W/parametro)):
             array1=stacked_images[parametro*i:parametro*(i+1),parametro*j:parametro*(j+1)]
             cv2.imwrite(ruta_salida+"/"+nombre_salida+str(i)+"_"+str(j)+".png",array1)
+
+
+
+def Generar_txt(vector:list, save_folder:str='/content/drive/MyDrive/Equipo_Agua/Geo/Data/Carpeta_prueba/Hector/txt'):
+    '''
+    (Function)
+        Esta funcion genera archivos txt, que es lo que harias con la app "labelImg", que contiene la etiqueta y coordenadas
+        correspondientemente. 
+    (Parameters)
+        vector: Esta variable sale despues de hacer la prediccion, utilizando el modelo de entrenado con la arquitectura
+                Yolov7.
+        save_folder: Ruta al directorio, donde desea guardar los txt generados.
+    
+    '''
+    df_vector = pd.DataFrame(vector)
+    df_vector['Etiqueta'] = df_vector[0].map(lambda x: str(x)[7:8])
+    df_vector.rename(columns={5:'Nombre'}, inplace=True)
+    for nombre in tqdm.tqdm(df_vector['Nombre'].unique()):
+        df_aux = df_vector[df_vector['Nombre'] == nombre][['Etiqueta', 1,2,3,4]]
+        df_aux.reset_index(drop=True, inplace=True)
+        with open(save_folder + '/' + nombre + '.txt', 'w') as archivo:
+            for i in df_aux.index:
+                linea = df_aux.iloc[i].astype(str).values
+                archivo.writelines(' '.join(linea) + '\n')
