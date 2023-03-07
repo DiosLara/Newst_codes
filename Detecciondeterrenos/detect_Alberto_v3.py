@@ -24,7 +24,7 @@ class modelo():
         model = TracedModel(model, device, opt_img_size)
         self.model= model
 
-    def detect(self,opt_conf_thres,opt_source="train/images",display=False,imagen_s="NO"):
+    def detect(self,opt_conf_thres,opt_source="train/images",display=False,imagen_s=np.array([1,1])):
         vector=[]
         opt_no_trace=False
         opt_iou_thres=0.45
@@ -38,7 +38,7 @@ class modelo():
         stride = int(self.model.stride.max())  # model stride
         imgsz = check_img_size(imgsz, s=stride)  # check img_size
         names = self.model.module.names if hasattr(self.model, 'module') else self.model.names
-        if imagen_s=="NO":
+        if imagen_s.shape[0]==2:
             dataset = LoadImages(source, img_size=imgsz, stride=stride)
             t0 = time.time()
             for path, img, im0s, _ in dataset:
