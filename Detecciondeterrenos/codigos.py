@@ -4,9 +4,14 @@ from tkinter import filedialog
 from tkinter import *
 import shutil
 import rasterio
-# from osgeo import gdal
 import tqdm
 import pandas as pd 
+import rasterio
+
+import rasterio.mask
+
+
+
 btn_down = False
 
 def get_points(im):
@@ -165,3 +170,65 @@ def Generar_txt(vector:list, save_folder:str='/content/drive/MyDrive/Equipo_Agua
             for i in df_aux.index:
                 linea = df_aux.iloc[i].astype(str).values
                 archivo.writelines(' '.join(linea) + '\n')
+
+def generar_mosaico_v2(raster:str,output_path:str,mode:bool=False, dim:int=1024 ):
+    '''
+    (Function)
+        Esta funcion particiona un archivo .tif en multiples, con la intencion de tener fragmentos del mismo.
+    (Parameters)
+        - raster: Ruta del archivo a particionar
+        - output_path: Ruta a la carpeta donde se guardaran los fragmentos
+        - mode: Si es True genera archivos .tif de lo contrario genera archivos .png (Por default False)
+        - dim: Numero de pixeles a considerar por particion
+    '''
+    from osgeo import gdal
+    
+    gdal_interpeter = gdal.Open(raster)
+    width = gdal_interpeter.RasterXSize
+    height = gdal_interpeter.RasterYSize
+    coordenadas_gdal = gdal_interpeter.GetGeoTransform()
+    minx = coordenadas_gdal[0]
+    miny = coordenadas_gdal[3] + width*coordenadas_gdal[4] + height*coordenadas_gdal[5] 
+    maxx = coordenadas_gdal[0] + width*coordenadas_gdal[1] + height*coordenadas_gdal[2]
+    maxy = coordenadas_gdal[3] 
+    minx,maxx,miny,maxy,"W",maxx-minx,"H",maxy-miny
+    src_raster_path = raster
+    src=rasterio.open(src_raster_path)
+    H,W=src.shape
+    alto=int(np.floor(H/dim))
+    ancho=int(np.floor(W/dim))
+    for j in tqdm.tqdm(range(ancho)):#ancho
+        for i in (range(alto)):#alto
+            # j=1
+            label=raster.replace("\\","/").split("/")[-1][:-4]+"_"
+            nameimg=label.lower()+str(i)+"_"+str(j)
+            cuadro=[]
+            for k in range(2): 
+                for l in range(2):
+                    cuadro.append((minx+(maxx-minx)/ancho*(j+k),
+                                maxy-(maxy-miny)/alto*(i+l),
+                                0.0))
+            cuadro=[cuadro[0],cuadro[1],cuadro[3],cuadro[2],cuadro[0]]
+            shapes=[{"type":'Polygon','coordinates':[cuadro]}]
+            vector=[]
+            if mode==False:
+                array, out_transform = rasterio.mask.mask(src, shapes, crop=True)
+                array=array.copy()
+                four_images=[array[2],array[1],array[0]]
+                stacked_images = np.stack(four_images, axis=-1)
+                imagen_n=0
+                imagen_n=stacked_images.copy()
+                cv2.imwrite(output_path+"/"+nameimg+'.png',imagen_n)
+            if mode==True:
+                out_image, out_transform = rasterio.mask.mask(src, shapes, crop=True) # setting all pixels outside of the feature zone to zero
+                out_meta = src.meta
+
+                out_meta.update({"driver": "GTiff",
+                "height": out_image.shape[1],
+                "width": out_image.shape[2],
+                "transform": out_transform})
+
+                output_file = output_path+"/"+nameimg+".tif"
+
+                with rasterio.open(output_file, "w", **out_meta) as dest:
+                    dest.write(out_image)
