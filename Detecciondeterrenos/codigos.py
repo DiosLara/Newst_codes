@@ -158,6 +158,15 @@ def Generar_txt(vector:list, save_folder:str='/content/drive/MyDrive/Equipo_Agua
         vector: Esta variable sale despues de hacer la prediccion, utilizando el modelo de entrenado con la arquitectura
                 Yolov7.
         save_folder: Ruta al directorio, donde desea guardar los txt generados.
+    (Example)
+        Antes de llamar a la funcion es necesario correr el siguiente codigo en una celda, ya que el codigo
+        genera una variable que se llama vector, no se ve explicitamente la declaracion, pero al correr el codigo
+        se crea (tras bambalinas)
+        
+        %run detect_1.py --device 0 --weights best_Fer.pt --conf 0.1 --img-size 256 --source ruta/carpeta/con/imagenes/para/deteccion
+        
+        luego simplemente llama a la funcion Generar_txt(), si quiere puede revisar en una celda que existe la variable vector
+        que es una lista.
     
     '''
     df_vector = pd.DataFrame(vector)
