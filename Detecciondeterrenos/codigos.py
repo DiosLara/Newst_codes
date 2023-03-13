@@ -7,7 +7,7 @@ import rasterio
 import tqdm
 import pandas as pd 
 import rasterio
-
+import os
 import rasterio.mask
 
 
@@ -175,6 +175,10 @@ def Generar_txt(vector:list, save_folder:str='/content/drive/MyDrive/Equipo_Agua
     for nombre in tqdm.tqdm(df_vector['Nombre'].unique()):
         df_aux = df_vector[df_vector['Nombre'] == nombre][['Etiqueta', 1,2,3,4]]
         df_aux.reset_index(drop=True, inplace=True)
+        try:
+            os.mkdir(save_folder)
+        except:
+            pass
         with open(save_folder + '/' + nombre + '.txt', 'w') as archivo:
             for i in df_aux.index:
                 linea = df_aux.iloc[i].astype(str).values
