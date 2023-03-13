@@ -207,7 +207,7 @@ def generar_mosaico_v2(raster:str,output_path:str,mode:bool=False, dim:int=1024 
     H,W=src.shape
     alto=int(np.floor(H/dim))
     ancho=int(np.floor(W/dim))
-    for j in tqdm.tqdm(range(ancho)):#ancho
+    for j in tqdm.tqdm(2,range(ancho)):#ancho
         for i in (range(alto)):#alto
             # j=1
             label=raster.replace("\\","/").split("/")[-1][:-4]+"_"

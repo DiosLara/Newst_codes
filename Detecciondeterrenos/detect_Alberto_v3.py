@@ -25,6 +25,7 @@ class modelo():
         self.model= model
 
     def detect(self,opt_conf_thres,opt_source="train/images",display=False,imagen_s=np.array([1,1])):
+        # print('Carga detect')
         vector=[]
         opt_no_trace=False
         opt_iou_thres=0.45
@@ -39,9 +40,10 @@ class modelo():
         imgsz = check_img_size(imgsz, s=stride)  # check img_size
         names = self.model.module.names if hasattr(self.model, 'module') else self.model.names
         if imagen_s.shape[0]==2:
+            # print('Entre al if')
             dataset = LoadImages(source, img_size=imgsz, stride=stride)
             t0 = time.time()
-            for path, img, im0s, _ in dataset:
+            for path, img, im0s, _ in tqdm.tqdm(dataset):
                 # print(img.shape)
                 img = torch.from_numpy(img).to(device)
                 img = img.float()  # uint8 to fp16/32
@@ -67,10 +69,11 @@ class modelo():
                         for *xyxy, conf, cls in reversed(det):
                             xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                             line = (cls, *xywh, conf) if opt_save_conf else (cls, *xywh)  # label format
-                            vector.append(line)
+                            vector.append(list(line)+[p.name[:-4]])
                 if display:
                     print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
         else:
+            # print('Entre al else')
             img0=imagen_s  
             img = letterbox(img0, imgsz, stride)[0]
             img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
