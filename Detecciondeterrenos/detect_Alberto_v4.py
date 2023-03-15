@@ -67,6 +67,7 @@ class modelo():
                 t1 = time_synchronized()
                 with torch.no_grad():   # Calculating gradients would cause a GPU memory leak
                     pred = self.model(img, augment=opt_augment)[0]
+                    print(pred)
                 t2 = time_synchronized()
                 pred = non_max_suppression(pred, opt_conf_thres, opt_iou_thres, classes=opt_classes, agnostic=opt_agnostic_nms)
                 t3 = time_synchronized()
@@ -197,8 +198,10 @@ def imshow_detect(df_cache,imagen_n,nameimg="image"):
     cv2.destroyAllWindows()
 
 def rotacion_detect(startpoint,endpoint,angle,proyecciones,dim=700):
-    min_y,min_x,z=np.min((proyecciones,proyecciones),axis=1)[0]
-    max_y,max_x,z=np.max((proyecciones,proyecciones),axis=1)[0]
+    point1=np.min((proyecciones,proyecciones),axis=1)[0]
+    min_y,min_x=point1[0],point1[1]
+    point2=np.max((proyecciones,proyecciones),axis=1)[0]
+    max_y,max_x=point2[0],point2[1]
     min_y,min_x,max_y,max_x,proyecciones
     tipos=["casa","terreno"]
     y1,x1=startpoint
