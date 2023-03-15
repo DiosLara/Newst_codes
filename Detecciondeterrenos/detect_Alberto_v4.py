@@ -27,7 +27,7 @@ class modelo():
         vector=[]
         opt_no_trace=False
         opt_iou_thres=0.45
-        opt_save_conf=False
+        opt_save_conf=True
         opt_classes=None
         opt_agnostic_nms=False
         opt_augment=False
@@ -67,7 +67,6 @@ class modelo():
                 t1 = time_synchronized()
                 with torch.no_grad():   # Calculating gradients would cause a GPU memory leak
                     pred = self.model(img, augment=opt_augment)[0]
-                    print(pred)
                 t2 = time_synchronized()
                 pred = non_max_suppression(pred, opt_conf_thres, opt_iou_thres, classes=opt_classes, agnostic=opt_agnostic_nms)
                 t3 = time_synchronized()
@@ -168,8 +167,9 @@ def vector2xy(vector,dim=700,nameimg="image",angle=0):
         start_point_100 = ((x1 - xw)/w, (y1 - yw)/h)
         end_point_100   = ((x1 + xw)/w, (y1 + yw)/h)
         area=xw*yw
+        conf=str_v[5]
         try:
-            nameimg=str_v[5]
+            nameimg=str_v[6]
         except:
             pass
         if str(str_v[0])=="0":
@@ -177,21 +177,21 @@ def vector2xy(vector,dim=700,nameimg="image",angle=0):
         else:
             tipo="terreno"
         if int(xw)!=0 and int(yw)!=0 and (xw/yw<=3.2 and yw/xw<=3.2):
-            s.append([tipo,start_point_im,end_point_im,start_point_100,end_point_100,area,nameimg])
-    df_cache=pd.DataFrame(s,columns=["Tipo","start_point_im","end_point_im","start_point_100","end_point_100","area","imagen"])
-    try:
-        df_cache["area"]=[int((x-np.min(df_cache["area"]))/(np.max(df_cache["area"])-np.min(df_cache["area"]))*100) for x in df_cache["area"]]
-    except:
-        pass
+            s.append([tipo,start_point_im,end_point_im,start_point_100,end_point_100,area,conf,nameimg])
+    df_cache=pd.DataFrame(s,columns=["Tipo","start_point_im","end_point_im","start_point_100","end_point_100","area","conf","imagen"])
     df_cache.drop_duplicates().reset_index(drop=True,inplace=True)
     return df_cache
     
 def imshow_detect(df_cache,imagen_n,nameimg="image"):
     for i in range(len(df_cache)):
             if df_cache["Tipo"][i]=="casa":
+                x,y=df_cache["start_point_im"][i]
                 cv2.rectangle(imagen_n,df_cache["start_point_im"][i],df_cache["end_point_im"][i],(0,0,255),2)
+                cv2.putText(imagen_n, str(df_cache["conf"][i]), (x+50,y+50), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,0,255), 2)
             else:
+                x,y=df_cache["start_point_im"][i]
                 cv2.rectangle(imagen_n,df_cache["start_point_im"][i],df_cache["end_point_im"][i],(0,255,0),2)
+                cv2.putText(imagen_n, str(int(float(df_cache["conf"][i])*100)/100),(x+50,y+50) , cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
 #     imagen_n=cv2.resize(imagen_n,(1024,1024))
     cv2.imshow(nameimg,imagen_n)
     cv2.waitKey()

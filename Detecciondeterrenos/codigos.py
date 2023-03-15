@@ -169,9 +169,10 @@ def Generar_txt(vector:list, save_folder:str='/content/drive/MyDrive/Equipo_Agua
         que es una lista.
     
     '''
+    vector=[str(x).replace("tensor(","").replace("=","").replace(", device","").replace("[","").replace("'cuda:0'","").replace("]","").replace(".)","").replace(")","").replace(" ","").replace("(","").replace("']","").replace("'","").strip().split(",") for x in vector]
     df_vector = pd.DataFrame(vector)
-    df_vector['Etiqueta'] = df_vector[0].map(lambda x: str(x)[7:8])
-    df_vector.rename(columns={5:'Nombre'}, inplace=True)
+    df_vector['Etiqueta'] = df_vector[0].map(lambda x: str(x))
+    df_vector.rename(columns={6:'Nombre'}, inplace=True)
     for nombre in tqdm.tqdm(df_vector['Nombre'].unique()):
         df_aux = df_vector[df_vector['Nombre'] == nombre][['Etiqueta', 1,2,3,4]]
         df_aux.reset_index(drop=True, inplace=True)
