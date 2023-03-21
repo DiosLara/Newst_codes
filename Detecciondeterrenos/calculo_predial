@@ -1,0 +1,38 @@
+import pandas as pd
+
+
+def calculo_predial(valor_catastral: float, tabla = pd.read_csv('Predial.csv')):
+    '''
+    (Function)
+        Función que calcula el impuesto predial con el valor catastral del predio y la tabla de rangos vigente
+    (Parameters)
+        valor_catastral: Valor catastral del predio, previamente calculado
+        tabla: Tabla de rangos vigente    '''
+    
+    predial = 0
+    for i in range(len(tabla)):
+        if i<len(tabla)-1:
+            if valor_catastral>=tabla.loc[i,'LIM_INF'] and valor_catastral<=tabla.loc[i,'LIM_SUP']:
+                predial = tabla.loc[i,'CUOTA_FIJA'] + (valor_catastral-tabla.loc[i,'LIM_INF'])*tabla.loc[i,'FACTOR']
+                break
+        else:
+            predial = tabla.loc[len(tabla)-1,'CUOTA_FIJA'] + (valor_catastral-tabla.loc[len(tabla)-1,'LIM_INF'])*tabla.loc[len(tabla)-1,'FACTOR']           
+    return predial
+
+
+def factor_frente(x):
+    '''
+    (Function)  
+        Esta funcion calcula el factor de frente (FFe) para cuestiones del calculo del valor catastral
+    (Parameters)
+        x: Longitud del frente expresada en metros lineales
+    '''
+    if isinstance(x,float) or isinstance(x, int):
+        if x>=3.5: return 1
+        else: return round(x/3.5,5)
+    else:
+        print('Tipo de dato de no valido, verifique que sea numerico (int or float)')
+
+
+
+
