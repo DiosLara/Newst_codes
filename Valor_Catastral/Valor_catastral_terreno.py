@@ -1,26 +1,3 @@
-import pandas as pd
-
-# PREDIAL
-def calculo_predial(valor_catastral: float, tabla = pd.read_csv('Predial.csv')):
-    '''
-    (Function)
-        Función que calcula el impuesto predial con el valor catastral del predio y la tabla de rangos vigente
-    (Parameters)
-        valor_catastral: Valor catastral del predio, previamente calculado
-        tabla: Tabla de rangos vigente    
-        '''  
-    for i in range(len(tabla)):
-        if i<len(tabla)-1:
-            if valor_catastral>=tabla.loc[i,'LIM_INF'] and valor_catastral<=tabla.loc[i,'LIM_SUP']:
-                predial = tabla.loc[i,'CUOTA_FIJA'] + (valor_catastral-tabla.loc[i,'LIM_INF'])*tabla.loc[i,'FACTOR']
-                break
-        else:
-            predial = tabla.loc[len(tabla)-1,'CUOTA_FIJA'] + (valor_catastral-tabla.loc[len(tabla)-1,'LIM_INF'])*tabla.loc[len(tabla)-1,'FACTOR']           
-    return predial
-
-
-
-
 # VALOR CATASTRAL DEL TERENO
 def factor_frente(x):
     '''
@@ -117,52 +94,4 @@ def factor_restriccion(s, aa):
         return round(0.5 - ((aa/2)/s),5)  
     else:
         print('Tipos de datos de no valido, verifique que sean numericos (int or float)')
-
-
-
-
-# VALOR CATASTRAL DE CONSTRUCCION
-
-def factor_edad(ac, cd):
-    '''
-    (Function)  
-        Esta funcion calcula el factor de edad de construccipon (FEC) para cuestiones del calculo del valor catastral
-    (Parameters)
-        ac: Años transcurridos desde la construcción o desde la última remodelación en enteros
-        cd: Coeficiente de demérito anual obtenido de la tabla con el mismo nombre
-        '''
-    if isinstance(ac, int) or (isinstance(cd,float) or isinstance(cd,int)):
-        return round(1-(ac*cd),5)
-    else:
-        prin('Tipos de datos de no valido, verifique que sean numericos (int or float)')
-
-def factor_grado_conservacion(g):
-    '''
-    (Function)  
-        Esta funcion calcula el factor de conservación de construcción (FGC) para cuestiones del calculo del valor catastral
-    (Parameters)
-        g: Cadena de texto del grado de conservación entre Bueno, Normal, Regular, Malo y Ruinoso
-        '''
-    grados = {'Bueno':1, 
-              'Normal':0.90, 
-              'Regular':0.75,
-              'Malo':0.40,
-              'Ruinoso':0.08}
-    if isinstance(g, str):
-        return round(grados[g],5)
-    else:
-        print('Tipo de dato no valido, verifique que sea una cadena de texto')
-
-def factor_numero_niveles(nn):
-    '''
-    (Function)  
-        Esta funcion calcula el factor de numero de niveles (FNN) para cuestiones del calculo del valor catastral
-    (Parameters)
-        nn: Número de niveles de la construcción expresado en enteros
-        '''
-    if isinstance(nn, int):
-        return round(1+(nn-2)*0.002,5)
-    else:
-        print('Tipos de datos de no valido, verifique que sean numericos (int or float)')
-
 
