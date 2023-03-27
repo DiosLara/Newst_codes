@@ -1,7 +1,7 @@
 import pandas as pd
 
 # PREDIAL
-def calculo_predial(valor_catastral: float, tabla = pd.read_csv('Predial.csv')):
+def calculo_predial(valor_catastral: float, tabla = pd.read_csv('./Data/Predial.csv')):
     '''
     (Function)
         Función que calcula el impuesto predial con el valor catastral del predio y la tabla de rangos vigente
