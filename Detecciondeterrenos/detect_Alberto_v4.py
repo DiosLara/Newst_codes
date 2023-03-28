@@ -13,7 +13,16 @@ from models.experimental import attempt_load
 from utils.datasets import LoadImages , letterbox
 from utils.general import check_img_size, non_max_suppression, scale_coords, xyxy2xywh, set_logging
 from utils.torch_utils import select_device, time_synchronized, TracedModel
-
+import os
+from osgeo import gdal
+import rasterio
+import geopandas as gpd
+import rasterio.mask
+from rasterio.windows import Window
+import sys
+from shapely.geometry import mapping
+from scipy.ndimage import rotate as rotate_image
+from shapely import geometry
 
 opt_img_size=256
 class modelo():
@@ -128,7 +137,7 @@ def correct_orientation(img_rgb,dim,pattern_path="pattern1.png"):
     le=0
     angulo_f=0
     imagen_final=img_rgb.copy()
-    for i in range(-45,45,15):
+    for i in range(-45,45,1):
         angulo=i
         M = cv2.getRotationMatrix2D((dim//2,dim//2), angulo, 1)
         image_ro = cv2.warpAffine(img_gray, M, (dim,dim))
@@ -152,12 +161,12 @@ def verificacion(im):
     verde=int((np.sum(mask)/im.shape[0]**2/255)*100)
     return verde 
 
-def vector2xy(vector,dim=700,nameimg="image",angle=0):
+def vector2xy(vector,w,h,dim=700,nameimg="image",angle=0):
     s=[]
     for v in vector:
 #         str_v=(str(v).replace("tensor(","").replace("=","").replace(" device","").replace("[","").replace("]","").replace(".)","").replace(")","").replace("(","").replace("']","").replace("'","").strip().split(","))
         str_v=(str(v).replace("tensor(","").replace("=","").replace(", device","").replace("[","").replace("'cuda:0'","").replace("]","").replace(".)","").replace(")","").replace("(","").replace("']","").replace("'","").strip().split(","))
-        h,w=dim,dim
+#         h,w=dim,dim
         x1 = int( float(str_v[1]) * w )
         y1 = int( float(str_v[2]) * h )
         xw = int( float(str_v[3]) * w /2)
@@ -176,7 +185,7 @@ def vector2xy(vector,dim=700,nameimg="image",angle=0):
             tipo="casa"
         else:
             tipo="terreno"
-        if int(xw)!=0 and int(yw)!=0 and (xw/yw<=3.2 and yw/xw<=3.2):
+        if int(xw)!=0 and int(yw)!=0:# and (xw/yw<=3.2 and yw/xw<=3.2):
             s.append([tipo,start_point_im,end_point_im,start_point_100,end_point_100,area,conf,nameimg])
     df_cache=pd.DataFrame(s,columns=["Tipo","start_point_im","end_point_im","start_point_100","end_point_100","area","conf","imagen"])
     df_cache.drop_duplicates().reset_index(drop=True,inplace=True)
@@ -187,17 +196,17 @@ def imshow_detect(df_cache,imagen_n,nameimg="image"):
             if df_cache["Tipo"][i]=="casa":
                 x,y=df_cache["start_point_im"][i]
                 cv2.rectangle(imagen_n,df_cache["start_point_im"][i],df_cache["end_point_im"][i],(0,0,255),2)
-                cv2.putText(imagen_n, str(df_cache["conf"][i]), (x+50,y+50), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,0,255), 2)
+#                 cv2.putText(imagen_n, str(df_cache["conf"][i]), (x+50,y+50), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,0,255), 2)
             else:
                 x,y=df_cache["start_point_im"][i]
                 cv2.rectangle(imagen_n,df_cache["start_point_im"][i],df_cache["end_point_im"][i],(0,255,0),2)
-                cv2.putText(imagen_n, str(int(float(df_cache["conf"][i])*100)/100),(x+50,y+50) , cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
+#                 cv2.putText(imagen_n, str(int(float(df_cache["conf"][i])*100)/100),(x+50,y+50) , cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
 #     imagen_n=cv2.resize(imagen_n,(1024,1024))
     cv2.imshow(nameimg,imagen_n)
     cv2.waitKey()
     cv2.destroyAllWindows()
 
-def rotacion_detect(startpoint,endpoint,angle,proyecciones,dim=700):
+def rotacion_detect(startpoint,endpoint,angle,proyecciones,w,h,dim):
     point1=np.min((proyecciones,proyecciones),axis=1)[0]
     min_y,min_x=point1[0],point1[1]
     point2=np.max((proyecciones,proyecciones),axis=1)[0]
@@ -206,9 +215,11 @@ def rotacion_detect(startpoint,endpoint,angle,proyecciones,dim=700):
     tipos=["casa","terreno"]
     y1,x1=startpoint
     y2,x2=endpoint
-    x1,y1=x1*2-1,y1*2-1
-    x2,y2=x2*2-1,y2*2-1
+    x1,y1=(x1)*2-1,(y1)*2-1
+    x2,y2=(x2)*2-1,(y2)*2-1
     angle=angle*math.pi/180
+    x1,y1=x1*(w/dim),y1*(h/dim)
+    x2,y2=x2*(w/dim),y2*(h/dim)
     #x_p, y_p son los puntos de un rectangulo en el orden inverso al manecillas del reloj
     x1p=max_x-((x1*math.cos(angle)-y1*math.sin(angle)+1)/2)*(max_x-min_x)
     y1p=min_y+((x1*math.sin(angle)+y1*math.cos(angle)+1)/2)*(max_y-min_y)
@@ -222,3 +233,128 @@ def rotacion_detect(startpoint,endpoint,angle,proyecciones,dim=700):
 
 def map_d(x, in_min, in_max, out_min, out_max):
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
+def postproceso(Modelo,casas,conf_casas,terreno,conf_terreno,raster,ancho,alto,dim,minx,maxx,miny,maxy,angulo_get=0,opt_conf_thres=0.05,imshow=False):
+    with rasterio.open(raster) as src:
+        with tqdm.tqdm(total=alto*ancho) as pbar:
+            for j in range(ancho):#ancho
+                for i in range(alto):#alto
+                    generar=0
+                    label=raster.replace('//','/').split('/')[-1][:-4]+'_'
+                    nameimg=label.lower()+str(i)+'_'+str(j)
+                    cuadro=[]
+                    for k in range(2):
+                        for l in range(2):
+                            cuadro.append((minx+(maxx-minx)/ancho*(j+k),maxy-(maxy-miny)/alto*(i+l)))
+                    cuadro=[cuadro[0],cuadro[1],cuadro[3],cuadro[2],cuadro[0]]
+                    shapes=[{'type':'Polygon','coordinates':[cuadro]}]
+                    vector=[]
+                    array, out_transform = rasterio.mask.mask(src, shapes, crop=True)
+                    if np.sum(array)<100:
+                        pbar.update(1)
+                        continue
+                    four_images=[array[2],array[1],array[0]]
+                    imagen_n = np.stack(four_images, axis=-1)
+                    if angulo_get!=0:
+                        angulo=-angulo_get
+                    else:
+                        angulo=correct_orientation(imagen_n,dim=dim)[0]
+                    image_ro=imagen_n.copy()
+    #                 image_ro=cv2.resize(image_ro,(dim,dim))  
+                    image_ro=rotate_image(image_ro,angulo,reshape=True)
+
+                    w=image_ro.shape[0]
+                    h=image_ro.shape[1]
+    #                 image_ro=cv2.resize(image_ro,(dim,dim))  
+                    with torch.no_grad():
+                        vector=Modelo.detect(opt_source="cache1.png",opt_conf_thres=opt_conf_thres,imagen_s=image_ro)
+                    proyecciones=shapes[0].get('coordinates')[0][:-1]
+                    df_cache=vector2xy(vector,w,h,dim=dim,nameimg=nameimg)
+                    for cs_1 in (range(len(df_cache))):
+                        if df_cache['Tipo'][cs_1]=='casa':
+                            x1,y1=df_cache.loc[cs_1,'start_point_im']
+                            x2,y2=df_cache.loc[cs_1,'end_point_im']
+                            df_aux=image_ro.copy()
+                            df_aux=df_aux[y1:y2,x1:x2]
+                            
+                            if np.sum(df_aux)>500:
+                                casas.append(rotacion_detect(df_cache.loc[cs_1,'start_point_100'], df_cache.loc[cs_1,'end_point_100'],-angulo,proyecciones,w,h,dim))
+                                conf_casas.append(df_cache.loc[cs_1,'conf'])
+                        else:
+                            terreno.append(rotacion_detect(df_cache.loc[cs_1,'start_point_100'], df_cache.loc[cs_1,'end_point_100'],-angulo,proyecciones,w,h,dim))
+                            conf_terreno.append(df_cache.loc[cs_1,'conf'])
+                    if imshow:
+                        print(angulo)
+                        imshow_detect(df_cache,image_ro)
+                        # imshow=False
+                    pbar.update(1)
+                    
+def Parametro_raster(raster,metros=120):
+    # raster=r"D:\neza\CAT-0870366200000000.tif"
+    gdal_interpeter = gdal.Open(raster)
+    width = gdal_interpeter.RasterXSize
+    height = gdal_interpeter.RasterYSize
+    coordenadas_gdal = gdal_interpeter.GetGeoTransform()
+    minx = coordenadas_gdal[0]
+    miny = coordenadas_gdal[3] + width*coordenadas_gdal[4] + height*coordenadas_gdal[5] 
+    maxx = coordenadas_gdal[0] + width*coordenadas_gdal[1] + height*coordenadas_gdal[2]
+    maxy = coordenadas_gdal[3]
+    src_raster_path = raster
+    src=rasterio.open(src_raster_path)
+    H,W=src.shape
+    dim=int(np.ceil(map_d(minx+metros,minx,maxx,0,W)))
+    alto=np.max([1,int(np.floor(H/dim))])
+    ancho=np.max([1,int(np.floor(W/dim))])
+    return alto,ancho,dim,src.crs,H,W,minx,maxx,miny,maxy
+
+
+def shape_transform(shape):
+    c=[]
+    angulo_manzana=[]
+    for manzana in range(len(shape)):
+        proyecciones1=mapping(shape['geometry'][manzana]).get('coordinates')
+        angulos=[]
+        d=[]
+        poly=pd.DataFrame(proyecciones1[0])
+        for point in range(1,len(poly)):
+            d.append(((poly[1][point]-poly[1][point-1])**2+(poly[0][point]-poly[0][point-1])**2))
+            angulos.append(math.atan(((poly[1][point]-poly[1][point-1])/(poly[0][point]-poly[0][point-1])))*180/math.pi)
+        angulo_manzana.append(angulos[d.index(max(d))])
+    shape["angulo_manzana"]=angulo_manzana
+    shape["geometry"]=shape["geometry"].envelope
+    for manzana in range(len(shape)):
+        proyecciones1=mapping(shape['geometry'][manzana]).get('coordinates')
+        proyecciones=proyecciones1[0]
+        point1=np.min((proyecciones,proyecciones),axis=1)[0]
+        min_y,min_x=point1[0],point1[1]
+        point2=np.max((proyecciones,proyecciones),axis=1)[0]
+        max_y,max_x=point2[0],point2[1]
+        c.append(','.join([str(min_y),str(min_x),str(max_y),str(max_x)]))
+    shape1=pd.DataFrame()
+    shape1['points']=c
+    shape1=shape1['points'].str.split(',',expand=True)
+    shape1=shape1.astype({0:'float64',1:'float64',2:'float64',3:'float64'})
+    shape1["cve_cat"]=shape["cve_cat"]
+    shape1["angulo_manzana"]=shape["angulo_manzana"]
+    shape=shape1
+    return shape
+    
+def ampliar_shape(shape,factor_ampliacion=2):
+    shape["geometry"]=shape["geometry"].envelope
+    shape['centroid']=shape.centroid
+    geometry=[]
+    for i,polygon in enumerate(shape['geometry']):
+        point=mapping(shape['centroid'][i]).get('coordinates')
+        # print(point)
+        x=point[0]
+        y=point[1]
+        go=[]
+        coodinates=mapping(polygon).get('coordinates')[0]
+        for a in coodinates:
+            x1=a[0]
+            y1=a[1]
+            x2=x+(x1-x)*factor_ampliacion
+            y2=y+(y1-y)*factor_ampliacion
+            go.append((x2,y2))
+        geometry.append(Polygon(go))
+    return gpd.GeoDataFrame(shape["cve_cat"],geometry=geometry)
