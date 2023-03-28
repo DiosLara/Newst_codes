@@ -1,23 +1,3 @@
-import pandas as pd
-
-# PREDIAL
-def calculo_predial(valor_catastral: float, tabla = pd.read_csv('Predial.csv')):
-    '''
-    (Function)
-        Función que calcula el impuesto predial con el valor catastral del predio y la tabla de rangos vigente
-    (Parameters)
-        valor_catastral: Valor catastral del predio, previamente calculado
-        tabla: Tabla de rangos vigente    
-        '''  
-    for i in range(len(tabla)):
-        if i<len(tabla)-1:
-            if valor_catastral>=tabla.loc[i,'LIM_INF'] and valor_catastral<=tabla.loc[i,'LIM_SUP']:
-                predial = tabla.loc[i,'CUOTA_FIJA'] + (valor_catastral-tabla.loc[i,'LIM_INF'])*tabla.loc[i,'FACTOR']
-                break
-        else:
-            predial = tabla.loc[len(tabla)-1,'CUOTA_FIJA'] + (valor_catastral-tabla.loc[len(tabla)-1,'LIM_INF'])*tabla.loc[len(tabla)-1,'FACTOR']           
-    return predial
-
 # VALOR CATASTRAL DEL TERENO
 def factor_frente(x):
     '''
@@ -45,72 +25,73 @@ def factor_fondo(f, fb):
     else:
         print('Tipos de datos de no valido, verifique que sean numericos (int or float)')
 
-def factor_irregularidad(s, a):
+def factor_irregularidad(s, ai):
     '''
     (Function)  
-        Esta funcion calcula el factor de fondo (FFo) para cuestiones del calculo del valor catastral
+        Esta funcion calcula el factor de irregularidad (FI) para cuestiones del calculo del valor catastral
     (Parameters)
-        f: Longitud del fondo expresada en metros lineales
-        fb: Fondo base determinado según la tabla de valores unitarios
-    '''
-    if (isinstance(f,float) or isinstance(f, int)) and (isinstance(fb,float) or isinstance(fb, int)):
-        return round(0.5 + ((a/2)/s),5)
+        s: Superficie del terreno expresada en metros cuadrados
+        ai: Área inscrita definida como la mayor superficie del terreno cubierta por como máximo dos rectángulos
+        '''
+    if (isinstance(ai,float) or isinstance(ai, int)) and (isinstance(s,float) or isinstance(s, int)):
+        return round(0.5 + ((ai/2)/s),5)
     else:
         print('Tipos de datos de no valido, verifique que sean numericos (int or float)')
 
 def factor_area(s, ab):
+    '''
+    (Function)  
+        Esta funcion calcula el factor de área (FA) para cuestiones del calculo del valor catastral
+    (Parameters)
+        s: Superficie del terreno expresada en metros cuadrados
+        ab: Área base determinada según la tabla de valores unitarios
+        '''
     if (isinstance(s,float) or isinstance(s, int)) and (isinstance(ab,float) or isinstance(ab, int)):
-        return round(0.7 + ((fb/f)*0.3),5)  
+        return round(0.7 + ((ab/s)*0.3),5)  
     else:
         print('Tipos de datos de no valido, verifique que sean numericos (int or float)')
 
 def factor_topografia(h, f):
+    '''
+    (Function)  
+        Esta funcion calcula el factor de topografía (FT) para cuestiones del calculo del valor catastral
+    (Parameters)
+        h: Longitud de la altua expresada en metros lineales
+        f: Longitud del fondo expresada en metros lineales
+        '''
     if (isinstance(f,float) or isinstance(f, int)) and (isinstance(h,float) or isinstance(h, int)):
         return round(1 - ((h/2)/f),5)  
     else:
         print('Tipos de datos de no valido, verifique que sean numericos (int or float)')
 
 def factor_posicion(p:str):
+    '''
+    (Function)  
+        Esta funcion calcula el factor de posicion (FP) para cuestiones del calculo del valor catastral
+    (Parameters)
+        p: cadena de texto del tipo de posición del terreno
+        '''
     posiciones = {'Interior':0.5, 
               'Intermedio':1, 
               'Esquinero':1.1,
               'Frentes_no_contiguos':1.1,
               'Cabecero':1.2,
               'Manzanero':1.3}
-    if isintance(p, str):
+    if isinstance(p, str):
         return round(posiciones[p],5)
     else:
         print('Tipo de dato no valido, verifique que sea una cadena de texto')
 
-def factor_restriccion(aa, s):
+def factor_restriccion(s, aa):
+    '''
+    (Function)  
+        Esta funcion calcula el factor de restriccion (FR) para cuestiones del calculo del valor catastral
+    (Parameters)
+        s: Superficie del terreno expresada en metros cuadrados
+        aa: Área aprovechable del terreno expresada en metros cuadrados
+        '''
     if (isinstance(aa,float) or isinstance(aa, int)) and (isinstance(s,float) or isinstance(s, int)):
         return round(0.5 - ((aa/2)/s),5)  
     else:
         print('Tipos de datos de no valido, verifique que sean numericos (int or float)')
-
-# VALOR CATASTRAL DE CONSTRUCCION
-
-def factor_edad(ac, cd):
-    if isinstance(ac, int) or (isinstance(cd,float) or isinstance(cd,int)):
-        return round(1-(ac*cd),5)
-    else:
-        prin('Tipos de datos de no valido, verifique que sean numericos (int or float)')
-
-def factor_grado_conservacion(g):
-    grados = {'Bueno':1, 
-              'Normal':0.90, 
-              'Regular':0.75,
-              'Malo':0.40,
-              'Ruinoso':0.08}
-    if isinstance(g, str):
-        return round(grados[g],5)
-    else:
-        print('Tipo de dato no valido, verifique que sea una cadena de texto')
-
-def factor_numero_niveles(nn):
-    if isinstance(nn, int):
-        return round(1+(nn-2)*0.002,5)
-    else:
-        print('Tipos de datos de no valido, verifique que sean numericos (int or float)')
-
 
