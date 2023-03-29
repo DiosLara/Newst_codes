@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 29 10:45:35 2023
+
+@author: Alberto
+"""
 import warnings
 warnings.filterwarnings('ignore')
 import pandas as pd
@@ -23,7 +29,13 @@ import sys
 from shapely.geometry import mapping
 from scipy.ndimage import rotate as rotate_image
 from shapely import geometry
-
+import cv2
+import torch,torchvision
+import numpy as np
+import torch.nn as nn
+from PIL import Image
+from torchvision import models
+from torchsummary import summary
 opt_img_size=256
 class modelo():
     def __init__(self,weights=["yolov7.pt"],device="0"):
@@ -43,22 +55,16 @@ class modelo():
         opt_no_trace=False
         source,  imgsz, trace = opt_source, opt_img_size, not opt_no_trace
         set_logging()
-        
         half = self.device.type != 'cpu'  # half precision only supported on CUDA
     # load FP32 model
         stride = int(self.model.stride.max())  # self.model stride
         imgsz = check_img_size(imgsz, s=stride)  # check img_size
-        
         if half:
             self.model.half()  # to FP16
         names = self.model.module.names if hasattr(self.model, 'module') else self.model.names
         # Set Dataloader
         if imagen_s.shape[0]==2:
             dataset = LoadImages(source, img_size=imgsz, stride=stride)
-            # # if self.device.type != 'cpu':
-            # #     self.model(torch.zeros(1, 3, imgsz, imgsz).to(self.device).type_as(next(self.model.parameters())))  # run once
-            # old_img_w = old_img_h = imgsz
-            # old_img_b = 1
             t0 = time.time()
             for path, img, im0s, vid_cap in tqdm.tqdm(dataset):
                 img = torch.from_numpy(img).to(self.device)
@@ -66,13 +72,6 @@ class modelo():
                 img /= 255.0  # 0 - 255 to 0.0 - 1.0
                 if img.ndimension() == 3:
                     img = img.unsqueeze(0)
-                # Warmup
-                # if self.device.type != 'cpu' and (old_img_b != img.shape[0] or old_img_h != img.shape[2] or old_img_w != img.shape[3]):
-                #     old_img_b = img.shape[0]
-                #     old_img_h = img.shape[2]
-                #     old_img_w = img.shape[3]
-                #     for i in range(3):
-                #         self.model(img, augment=opt_augment)[0]
                 t1 = time_synchronized()
                 with torch.no_grad():   # Calculating gradients would cause a GPU memory leak
                     pred = self.model(img, augment=opt_augment)[0]
@@ -145,7 +144,6 @@ def correct_orientation(img_rgb,dim,pattern_path="pattern1.png"):
         threshold =.5
         loc = np.where( res >= threshold)
         com=len(loc[0])
-#         print(com)
         if com>0:
             an.append(angulo)
             if le<com:
@@ -164,7 +162,6 @@ def verificacion(im):
 def vector2xy(vector,w,h,dim=700,nameimg="image",angle=0):
     s=[]
     for v in vector:
-#         str_v=(str(v).replace("tensor(","").replace("=","").replace(" device","").replace("[","").replace("]","").replace(".)","").replace(")","").replace("(","").replace("']","").replace("'","").strip().split(","))
         str_v=(str(v).replace("tensor(","").replace("=","").replace(", device","").replace("[","").replace("'cuda:0'","").replace("]","").replace(".)","").replace(")","").replace("(","").replace("']","").replace("'","").strip().split(","))
 #         h,w=dim,dim
         x1 = int( float(str_v[1]) * w )
@@ -201,7 +198,6 @@ def imshow_detect(df_cache,imagen_n,nameimg="image"):
                 x,y=df_cache["start_point_im"][i]
                 cv2.rectangle(imagen_n,df_cache["start_point_im"][i],df_cache["end_point_im"][i],(0,255,0),2)
 #                 cv2.putText(imagen_n, str(int(float(df_cache["conf"][i])*100)/100),(x+50,y+50) , cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0,255,0), 2)
-#     imagen_n=cv2.resize(imagen_n,(1024,1024))
     cv2.imshow(nameimg,imagen_n)
     cv2.waitKey()
     cv2.destroyAllWindows()
@@ -234,7 +230,7 @@ def rotacion_detect(startpoint,endpoint,angle,proyecciones,w,h,dim):
 def map_d(x, in_min, in_max, out_min, out_max):
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
-def postproceso(Modelo,casas,conf_casas,terreno,conf_terreno,raster,ancho,alto,dim,minx,maxx,miny,maxy,angulo_get=0,opt_conf_thres=0.05,imshow=False):
+def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_terreno,clase_terreno,raster,ancho,alto,dim,minx,maxx,miny,maxy,shape,angulo_get=0,opt_conf_thres=0.05,imshow=False):
     with rasterio.open(raster) as src:
         with tqdm.tqdm(total=alto*ancho) as pbar:
             for j in range(ancho):#ancho
@@ -247,50 +243,68 @@ def postproceso(Modelo,casas,conf_casas,terreno,conf_terreno,raster,ancho,alto,d
                         for l in range(2):
                             cuadro.append((minx+(maxx-minx)/ancho*(j+k),maxy-(maxy-miny)/alto*(i+l)))
                     cuadro=[cuadro[0],cuadro[1],cuadro[3],cuadro[2],cuadro[0]]
-                    shapes=[{'type':'Polygon','coordinates':[cuadro]}]
-                    vector=[]
-                    array, out_transform = rasterio.mask.mask(src, shapes, crop=True)
-                    if np.sum(array)<100:
-                        pbar.update(1)
-                        continue
-                    four_images=[array[2],array[1],array[0]]
-                    imagen_n = np.stack(four_images, axis=-1)
-                    if angulo_get!=0:
-                        angulo=-angulo_get
-                    else:
-                        angulo=correct_orientation(imagen_n,dim=dim)[0]
-                    image_ro=imagen_n.copy()
-    #                 image_ro=cv2.resize(image_ro,(dim,dim))  
-                    image_ro=rotate_image(image_ro,angulo,reshape=True)
-
-                    w=image_ro.shape[0]
-                    h=image_ro.shape[1]
-    #                 image_ro=cv2.resize(image_ro,(dim,dim))  
-                    with torch.no_grad():
-                        vector=Modelo.detect(opt_source="cache1.png",opt_conf_thres=opt_conf_thres,imagen_s=image_ro)
-                    proyecciones=shapes[0].get('coordinates')[0][:-1]
-                    df_cache=vector2xy(vector,w,h,dim=dim,nameimg=nameimg)
-                    for cs_1 in (range(len(df_cache))):
-                        if df_cache['Tipo'][cs_1]=='casa':
+                    cvees=[]
+                    for punto in cuadro:
+                        x=float(punto[0])
+                        y=float(punto[1])
+                        mini_df=shape[(shape[0]<=x)&(shape[2]>=x)&(shape[1]<=y)&(shape[3]>=y)]
+                        if len(mini_df)>0:
+                            generar=1
+                            cvees.append(mini_df["cve_cat"].values)### traer todas las cve_catastrales del punto sobre el raster ...Pendiente
+#                             print(cvees)
+                    if generar==1:
+                        shapes=[{'type':'Polygon','coordinates':[cuadro]}]
+                        vector=[]
+                        array, out_transform = rasterio.mask.mask(src, shapes, crop=True)
+                        if np.sum(array)<100:
+                            pbar.update(1)
+                            continue
+                        four_images=[array[2],array[1],array[0]]
+                        imagen_n = np.stack(four_images, axis=-1)
+                        if angulo_get!=0:
+                            angulo=-angulo_get
+                        else:
+                            angulo=correct_orientation(imagen_n,dim=dim)[0]
+                        image_ro=imagen_n.copy()
+                        image_ro=rotate_image(image_ro,angulo,reshape=True)
+                        w=image_ro.shape[0]
+                        h=image_ro.shape[1]
+                        with torch.no_grad():
+                            vector=Modelo.detect(opt_source="cache1.png",opt_conf_thres=opt_conf_thres,imagen_s=image_ro)
+                        proyecciones=shapes[0].get('coordinates')[0][:-1]
+                        df_cache=vector2xy(vector,w,h,dim=dim,nameimg=nameimg)
+                        for cs_1 in (range(len(df_cache))):
+    #                         x1,y1=df_cache.loc[cs_1,'start_point_im']
+    #                         x2,y2=df_cache.loc[cs_1,'end_point_im']
+    #                         df_aux=image_ro.copy()
+    #                         df_aux=df_aux[y1:y2,x1:x2]
+    #                         clase,imagen=model_class.predict_iamge(df_aux)
+    #                         if np.sum(df_aux)>500:
+    #                             if crear:
+    #                                 name=r"C:\Users\ASUS\Inteligencia_Artificial\calsificador\salida/"+clase+"/"+str(datetime.datetime.now()).replace(" ","_").replace(":","_").replace(".","_").replace("-","_")+".png"
+    #                                 cv2.imwrite(name,imagen)
                             x1,y1=df_cache.loc[cs_1,'start_point_im']
                             x2,y2=df_cache.loc[cs_1,'end_point_im']
                             df_aux=image_ro.copy()
                             df_aux=df_aux[y1:y2,x1:x2]
-                            
-                            if np.sum(df_aux)>500:
-                                casas.append(rotacion_detect(df_cache.loc[cs_1,'start_point_100'], df_cache.loc[cs_1,'end_point_100'],-angulo,proyecciones,w,h,dim))
-                                conf_casas.append(df_cache.loc[cs_1,'conf'])
-                        else:
-                            terreno.append(rotacion_detect(df_cache.loc[cs_1,'start_point_100'], df_cache.loc[cs_1,'end_point_100'],-angulo,proyecciones,w,h,dim))
-                            conf_terreno.append(df_cache.loc[cs_1,'conf'])
-                    if imshow:
-                        print(angulo)
-                        imshow_detect(df_cache,image_ro)
-                        # imshow=False
+                            clase,imagen=model_class.predict_image(df_aux)
+                            if df_cache['Tipo'][cs_1]=='casa':
+                                if np.sum(df_aux)>500:
+                                    casas.append(rotacion_detect(df_cache.loc[cs_1,'start_point_100'], df_cache.loc[cs_1,'end_point_100'],-angulo,proyecciones,w,h,dim))
+                                    conf_casas.append(df_cache.loc[cs_1,'conf'])
+                                    clase_casas.append(clase)
+
+                            else:
+                                terreno.append(rotacion_detect(df_cache.loc[cs_1,'start_point_100'], df_cache.loc[cs_1,'end_point_100'],-angulo,proyecciones,w,h,dim))
+                                conf_terreno.append(df_cache.loc[cs_1,'conf'])
+                                clase_terreno.append(clase)
+                        if imshow:
+                            print(angulo)
+                            imshow_detect(df_cache,image_ro)
+
                     pbar.update(1)
                     
 def Parametro_raster(raster,metros=120):
-    # raster=r"D:\neza\CAT-0870366200000000.tif"
     gdal_interpeter = gdal.Open(raster)
     width = gdal_interpeter.RasterXSize
     height = gdal_interpeter.RasterYSize
@@ -345,7 +359,6 @@ def ampliar_shape(shape,factor_ampliacion=2):
     geometry=[]
     for i,polygon in enumerate(shape['geometry']):
         point=mapping(shape['centroid'][i]).get('coordinates')
-        # print(point)
         x=point[0]
         y=point[1]
         go=[]
@@ -358,3 +371,70 @@ def ampliar_shape(shape,factor_ampliacion=2):
             go.append((x2,y2))
         geometry.append(Polygon(go))
     return gpd.GeoDataFrame(shape["cve_cat"],geometry=geometry)
+
+idx_to_class={0: 'area_verde', 1: 'carros', 2: 'casas', 3: 'en_construccion', 4: 'establecimiento', 5: 'multivivienda', 6: 'terreno_baldio'}
+class alexnet():
+    def __init__(self,weights=r"C:\Users\ASUS\Inteligencia_Artificial\calsificador\ckpoint\best_model.pth",num_classes=7):
+        alexnet=models.alexnet(pretrained=True)
+        checkpoint=torch.load(weights)
+        for param in alexnet.parameters():
+            param.requires_grad = False
+        alexnet.classifier[6] = nn.Linear(4096, num_classes)
+        alexnet.classifier.add_module("7", nn.LogSoftmax(dim = 1))
+        summary(alexnet, (3, 224, 224))
+        alexnet.load_state_dict(checkpoint['model_state_dict'])
+        self.device = torch.device(0 if torch.cuda.is_available() else "cpu")
+        self.model=alexnet
+    
+    def predict_file(self,file,pad=True):
+        x = Image.open(file)
+        x = np.asarray(x)
+        if pad:
+            x=padding(x)
+        x=cv2.resize(x,(224,224))
+        x=x.astype("float32")
+        x=x/255
+        x=np.moveaxis(x,-1,0)
+        x = np.expand_dims(x, axis=0)
+        img = torch.from_numpy(x).to(self.device)
+        res=list(self.model(img).cpu().detach().numpy()[0])
+        indice=res.index(max(res))
+        clase=idx_to_class.get(indice)
+        return clase 
+    
+    def predict_image(self,image,pad=True):
+        x = np.asarray(image)
+        if pad:
+            x=padding(x)
+            imagen=x.copy()
+        x=cv2.resize(x,(224,224))
+        x=x.astype("float32")
+        x=x/255
+        x=np.moveaxis(x,-1,0)
+        x = np.expand_dims(x, axis=0)
+        img = torch.from_numpy(x).to(self.device)
+        res=list(self.model(img).cpu().detach().numpy()[0])
+        indice=res.index(max(res))
+        clase=idx_to_class.get(indice)
+        return clase, imagen 
+    
+def padding(img):                
+    old_image_height, old_image_width, channels = img.shape
+    new_image_width = 224
+    new_image_height = 224
+    color = (0,0,0)
+    if old_image_height<=old_image_width:
+        f=new_image_width/old_image_width
+    else:
+        f=new_image_height/old_image_height
+    img=cv2.resize(img,(int(f*old_image_width),int(f*old_image_height)))
+    old_image_height, old_image_width, channels = img.shape
+    result = np.full((new_image_height,new_image_width, channels), color, dtype=np.uint8)
+    x_center = (new_image_width - old_image_width) // 2
+    y_center = (new_image_height - old_image_height) // 2
+    try:
+        result[y_center:y_center+old_image_height, 
+            x_center:x_center+old_image_width] = img
+    except:
+        result=img 
+    return result        
