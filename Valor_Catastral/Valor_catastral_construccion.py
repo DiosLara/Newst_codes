@@ -1,17 +1,21 @@
 # VALOR CATASTRAL DE CONSTRUCCION
-
-def factor_edad(ac, cd):
+import pandas as pd
+def factor_edad(ac,t,g,cd=pd.read_csv('./Data/Factor_de_demerito_naucalpan.csv')):#vu):
     '''
     (Function)  
         Esta funcion calcula el factor de edad de construccipon (FEC) para cuestiones del calculo del valor catastral
     (Parameters)
         ac: Años transcurridos desde la construcción o desde la última remodelación en enteros
-        cd: Coeficiente de demérito anual obtenido de la tabla con el mismo nombre
+        cd: Tabla correspondiente al factor de demérito anual vigente
+        t: cadena de texto de la tipología de construcción
+        g: Cadena de texto del grado de conservación entre Bueno, Normal, Regular, Malo y Ruinoso
         '''
-    if isinstance(ac, int) or (isinstance(cd,float) or isinstance(cd,int)):
-        return round(1-(ac*cd),5)
+    if isinstance(ac, int) and ((isinstance(cd,float) or isinstance(cd,int))):
+        #if ac>vu: return: 0.6
+        if g=='Ruinoso': return 1
+        else: return round(1-(ac*cd[cd['Tipo']==t]['CDA']),5)
     else:
-        prin('Tipos de datos de no valido, verifique que sean numericos (int or float)')
+        print('Tipos de datos de no valido, verifique que sean numericos (int or float)')
 
 def factor_grado_conservacion(g):
     '''
@@ -30,14 +34,16 @@ def factor_grado_conservacion(g):
     else:
         print('Tipo de dato no valido, verifique que sea una cadena de texto')
 
-def factor_numero_niveles(nn):
+def factor_numero_niveles(nn,g):
     '''
     (Function)  
         Esta funcion calcula el factor de numero de niveles (FNN) para cuestiones del calculo del valor catastral
     (Parameters)
         nn: Número de niveles de la construcción expresado en enteros
+        g: Cadena de texto del grado de conservación entre Bueno, Normal, Regular, Malo y Ruinoso
         '''
     if isinstance(nn, int):
-        return round(1+(nn-2)*0.002,5)
+        if nn==1 or nn==2 or g=='Ruinoso': return 1
+        else: return round(1+(nn-2)*0.002,5)
     else:
         print('Tipos de datos de no valido, verifique que sean numericos (int or float)')
