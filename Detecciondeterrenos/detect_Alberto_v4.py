@@ -39,12 +39,14 @@ from torchsummary import summary
 opt_img_size=256
 class modelo():
     def __init__(self,weights=["yolov7.pt"],device="0"):
+        """inicializa el modelo con los pesos"""
         self.device = select_device(device)
         model = attempt_load(weights, map_location=self.device)
         model = TracedModel(model, self.device, opt_img_size)
         self.model= model
         
     def detect(self,opt_conf_thres,opt_source="train/images",display=False,imagen_s=np.array([1,1])):
+        """Genera las deteccion de objetos por imagen precargada o por carpeta/archivo"""
         vector=[]
         opt_no_trace=False
         opt_iou_thres=0.45
@@ -126,6 +128,7 @@ class modelo():
         return vector
     
 def correct_orientation(img_rgb,dim,pattern_path="pattern1.png"):
+    """Determina el angulo donde existe la mayor deteccion de lineas rectas"""
     img_gray = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2GRAY)
     template = cv2.imread(pattern_path,0)
     w, h = template.shape[::-1]
@@ -154,12 +157,14 @@ def correct_orientation(img_rgb,dim,pattern_path="pattern1.png"):
     return angulo_f,imagen_final
 
 def verificacion(im):
+    """filtro para determinar cuanta area verde existe en la imagen"""
     hsv=cv2.cvtColor(im,cv2.COLOR_BGR2HSV)
     mask=cv2.inRange(hsv,(12,30,0),(160,232,160))
     verde=int((np.sum(mask)/im.shape[0]**2/255)*100)
     return verde 
 
 def vector2xy(vector,w,h,dim=700,nameimg="image",angle=0):
+    """Transforma el vector de deteccion en coordendas porcentuales y enteras de la imagen"""
     s=[]
     for v in vector:
         str_v=(str(v).replace("tensor(","").replace("=","").replace(", device","").replace("[","").replace("'cuda:0'","").replace("]","").replace(".)","").replace(")","").replace("(","").replace("']","").replace("'","").strip().split(","))
@@ -189,6 +194,7 @@ def vector2xy(vector,w,h,dim=700,nameimg="image",angle=0):
     return df_cache
     
 def imshow_detect(df_cache,imagen_n,nameimg="image"):
+    """muestra la imagen con las detecciones"""
     for i in range(len(df_cache)):
             if df_cache["Tipo"][i]=="casa":
                 x,y=df_cache["start_point_im"][i]
@@ -203,6 +209,7 @@ def imshow_detect(df_cache,imagen_n,nameimg="image"):
     cv2.destroyAllWindows()
 
 def rotacion_detect(startpoint,endpoint,angle,proyecciones,w,h,dim):
+    """Rotata el cuadro detectado en el sistema de coordenadas inicial"""
     point1=np.min((proyecciones,proyecciones),axis=1)[0]
     min_y,min_x=point1[0],point1[1]
     point2=np.max((proyecciones,proyecciones),axis=1)[0]
@@ -228,6 +235,7 @@ def rotacion_detect(startpoint,endpoint,angle,proyecciones,w,h,dim):
     return Polygon(((y1p,x1p),(y2p,x2p),(y3p,x3p),(y4p,x4p),(y1p,x1p)))
 
 def map_d(x, in_min, in_max, out_min, out_max):
+    """Genera una interpolacion para pasar de un rango a otro"""
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_terreno,clase_terreno,raster,ancho,alto,dim,minx,maxx,miny,maxy,shape,angulo_get=0,opt_conf_thres=0.05,imshow=False):
@@ -305,6 +313,7 @@ def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_ter
                     pbar.update(1)
                     
 def Parametro_raster(raster,metros=120):
+    """Se obtienen las dimensiones del raster y del cuadro de corte"""
     gdal_interpeter = gdal.Open(raster)
     width = gdal_interpeter.RasterXSize
     height = gdal_interpeter.RasterYSize
@@ -323,6 +332,7 @@ def Parametro_raster(raster,metros=120):
 
 
 def shape_transform(shape):
+    """Convierte el shape en dataframe de coordenadas que engloba el polygon del shape para delimitar el raster"""
     c=[]
     angulo_manzana=[]
     for manzana in range(len(shape)):
@@ -354,6 +364,7 @@ def shape_transform(shape):
     return shape
     
 def ampliar_shape(shape,factor_ampliacion=2):
+    """Amplifica el polygon de cada manzana con el fin de extrar imagenes sin perder informacion de la manzana"""
     shape["geometry"]=shape["geometry"].envelope
     shape['centroid']=shape.centroid
     geometry=[]
@@ -374,7 +385,8 @@ def ampliar_shape(shape,factor_ampliacion=2):
 
 idx_to_class={0: 'area_verde', 1: 'carros', 2: 'casas', 3: 'en_construccion', 4: 'establecimiento', 5: 'multivivienda', 6: 'terreno_baldio'}
 class alexnet():
-    def __init__(self,weights=r"C:\Users\ASUS\Inteligencia_Artificial\calsificador\ckpoint\best_model.pth",num_classes=7):
+    def __init__(self,weights,num_classes):
+        """inicializa el model, con los pesos entrenados"""
         alexnet=models.alexnet(pretrained=True)
         checkpoint=torch.load(weights)
         for param in alexnet.parameters():
@@ -387,6 +399,7 @@ class alexnet():
         self.model=alexnet
     
     def predict_file(self,file,pad=True):
+        """Genera prediccion sobre archivo"""
         x = Image.open(file)
         x = np.asarray(x)
         if pad:
@@ -403,6 +416,7 @@ class alexnet():
         return clase 
     
     def predict_image(self,image,pad=True):
+        """Generar predeccion de clase sobre imagen precargada"""
         x = np.asarray(image)
         if pad:
             x=padding(x)
@@ -418,7 +432,8 @@ class alexnet():
         clase=idx_to_class.get(indice)
         return clase, imagen 
     
-def padding(img):                
+def padding(img):
+    """Escala la imagen y completa el sobrante con franjas negras, para no perder proporciones"""                
     old_image_height, old_image_width, channels = img.shape
     new_image_width = 224
     new_image_height = 224
