@@ -1,4 +1,7 @@
 # VALOR CATASTRAL DEL TERENO
+import random 
+
+
 def factor_frente(x,p):
     '''
     (Function)  
@@ -30,7 +33,7 @@ def factor_fondo(f, fb, p):
     else:
         print('Tipos de datos de no validos, verifique que sean numericos (int or float)')
 
-def factor_irregularidad(s,ai,r,p):
+def factor_irregularidad(s,ai,p,r=''):
     '''
     (Function)  
         Esta funcion calcula el factor de irregularidad (FI) para cuestiones del calculo del valor catastral
@@ -41,7 +44,7 @@ def factor_irregularidad(s,ai,r,p):
         p: cadena de texto del tipo de posición del terreno
         '''
     if (isinstance(ai,float) or isinstance(ai, int)) and (isinstance(s,float) or isinstance(s, int)):
-        if r==0 or p!='Interior': return round(0.5 + ((ai/2)/s),5)
+        if  p!='Interior': return round(0.5 + ((ai/2)/s),5)   #r==0 or
         else: return 1
     else:
         print('Tipos de datos de no valido, verifique que sean numericos (int or float)')
@@ -61,18 +64,18 @@ def factor_area(s,ab,p):
     else:
         print('Tipos de datos de no validos, verifique que sean numericos (int or float)')
 
-def factor_topografia(h,f,i,p):
+def factor_topografia(h,f,p,i=''):
     '''
     (Function)  
         Esta funcion calcula el factor de topografía (FT) para cuestiones del calculo del valor catastral
     (Parameters)
-        h: Longitud de la altura del desnivel expresada en metros lineales
+        h: Longitud de la altura 
         f: Longitud del fondo expresada en metros lineales
         i: indicador de inclinación (0 a nivel de la banqueta, 1 inclinado)
         p: cadena de texto del tipo de posición del terreno
         '''
     if (isinstance(f,float) or isinstance(f, int)) and (isinstance(h,float) or isinstance(h, int)):
-        if i==0 or p=='Interior': return 1
+        if  p=='Interior': return 1   # i==0 or
         else: return round(1 - ((h/2)/f),5)  
     else:
         print('Tipos de datos de no validos, verifique que sean numericos (int or float)')
@@ -105,7 +108,7 @@ def factor_restriccion(s,aa,p):
         p: cadena de texto del tipo de posición del terreno
         '''
     if (isinstance(aa,float) or isinstance(aa, int)) and (isinstance(s,float) or isinstance(s, int)):
-        if p=='Interior': return 1
+        if p.capitalize()=='Interior': return 1
         else: return round(0.5 + ((aa/2)/s),5)  
     else:
         print('Tipos de datos de no validos, verifique que sean numericos (int or float)')
@@ -127,7 +130,7 @@ def get_factor_posicion(x:int):
     '''
     if x==1:
         va = random.random()
-        print(va)
+        # print(va)
         if va < 0.04:
             return 1.3
         elif va < 0.1:
