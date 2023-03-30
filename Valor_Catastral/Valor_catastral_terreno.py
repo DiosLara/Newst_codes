@@ -110,3 +110,33 @@ def factor_restriccion(s,aa,p):
     else:
         print('Tipos de datos de no validos, verifique que sean numericos (int or float)')
 
+def get_factor_posicion(x:int):
+    '''
+(Function)
+    Esta funcion genera el factor de posicion en base a un preanalisis geoespacial, de manera que se identifican 
+    los preidos que estan en el borde de una calle. Debido a la distribucion se generan variables aleatorias en base 
+    al parametro de entrada, ya que si x es 1, determinamos que es un predio que esta en el contorno de la manzana,
+    es decir puede ser un predio Intermedio, Esquinero, Frentes no contiguos, Cabecero o Manzanero. Pero si es 0, sencillamente
+    decimos que es Interior. Para ver mas detalles de esto consule el Manual Catastral del Estado de Mexico en la pagina 79.
+(Parameters)
+    - x: Valor entero que pertenece a una categoria, si x es 1, determinamos que es un predio que esta en el contorno de la manzana,
+    es decir puede ser un predio Intermedio, Esquinero, Frentes no contiguos, Cabecero o Manzanero. Pero si es 0, sencillamente
+    decimos que es Interior
+(Author)
+    Hector Limon
+    '''
+    if x==1:
+        va = random.random()
+        print(va)
+        if va < 0.04:
+            return 1.3
+        elif va < 0.1:
+            return 1.2
+        elif va < 0.35:
+            return 1.1
+        else:
+            return 1
+    elif x == 0:
+        return 0.5
+    else:
+        raise ValueError('El valor ingresado debe ser un numero entero')
