@@ -4,7 +4,7 @@ import random
 
 
 
-def get_factor_edad_va():
+def get_factor_edad_va(x=''):
     return  round(random.uniform(0.6,1),5)
 
 def factor_grado_conservacion(g):
