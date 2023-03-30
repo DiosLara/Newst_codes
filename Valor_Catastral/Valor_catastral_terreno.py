@@ -76,7 +76,9 @@ def factor_topografia(h,f,p,i=''):
         '''
     if (isinstance(f,float) or isinstance(f, int)) and (isinstance(h,float) or isinstance(h, int)):
         if  p=='Interior': return 1   # i==0 or
-        else: return round(1 - ((h/2)/f),5)  
+        else: 
+            if round(1 - ((h/2)/f),5) >= 0: return round(1 - ((h/2)/f),5)
+            else: return 0.5
     else:
         print('Tipos de datos de no validos, verifique que sean numericos (int or float)')
 
