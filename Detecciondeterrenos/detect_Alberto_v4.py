@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Mar 29 10:45:35 2023
-
 @author: Alberto
 """
 import warnings
@@ -38,9 +37,9 @@ from torchvision import models
 from torchsummary import summary
 opt_img_size=256
 class modelo():
-    def __init__(self,weights=["yolov7.pt"],device="0"):
+    def __init__(self,weights=["yolov7.pt"]):
         """inicializa el modelo con los pesos"""
-        self.device = select_device(device)
+        self.device = torch.device(0 if torch.cuda.is_available() else "cpu")
         model = attempt_load(weights, map_location=self.device)
         model = TracedModel(model, self.device, opt_img_size)
         self.model= model
@@ -383,9 +382,9 @@ def ampliar_shape(shape,factor_ampliacion=2):
         geometry.append(Polygon(go))
     return gpd.GeoDataFrame(shape["cve_cat"],geometry=geometry)
 
-idx_to_class={0: 'area_verde', 1: 'carros', 2: 'casas', 3: 'en_construccion', 4: 'establecimiento', 5: 'multivivienda', 6: 'terreno_baldio'}
+# idx_to_class={0: 'area_verde', 1: 'carros', 2: 'casas', 3: 'en_construccion', 4: 'establecimiento', 5: 'multivivienda', 6: 'terreno_baldio'}
 class alexnet():
-    def __init__(self,weights,num_classes):
+    def __init__(self,weights,num_classes,idx_to_class):
         """inicializa el model, con los pesos entrenados"""
         alexnet=models.alexnet(pretrained=True)
         checkpoint=torch.load(weights)
@@ -397,6 +396,7 @@ class alexnet():
         alexnet.load_state_dict(checkpoint['model_state_dict'])
         self.device = torch.device(0 if torch.cuda.is_available() else "cpu")
         self.model=alexnet
+        self.idx_to_class=idx_to_class
     
     def predict_file(self,file,pad=True):
         """Genera prediccion sobre archivo"""
@@ -412,7 +412,7 @@ class alexnet():
         img = torch.from_numpy(x).to(self.device)
         res=list(self.model(img).cpu().detach().numpy()[0])
         indice=res.index(max(res))
-        clase=idx_to_class.get(indice)
+        clase=self.idx_to_class.get(indice)
         return clase 
     
     def predict_image(self,image,pad=True):
@@ -429,7 +429,7 @@ class alexnet():
         img = torch.from_numpy(x).to(self.device)
         res=list(self.model(img).cpu().detach().numpy()[0])
         indice=res.index(max(res))
-        clase=idx_to_class.get(indice)
+        clase=self.idx_to_class.get(indice)
         return clase, imagen 
     
 def padding(img):
