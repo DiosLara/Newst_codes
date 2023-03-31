@@ -20,7 +20,26 @@ def calculo_predial(valor_catastral: float, tabla = pd.read_csv('./Data/Predial.
 
 
 
-
+def Categorizar_por_intervalos(x:int, li:int, ls:int):
+    '''
+(Function)
+    Esta funcion retorna un 1 si el valor ingresado esta en el intervalo definido
+    de  lo contrario regresa un 0, en caso de ser un tipo de dato no valido
+    returna un 9
+(Parameters)
+    - x: Valor que se desea clasificar
+    - li: Limite inferior
+    - ls: Limite superior
+(Author)
+    Hector Limon
+    '''
+    if isinstance(x,int) or isinstance(x,float):
+        if x<=ls and x>= li:
+            return 1
+        else:
+            return 0
+    else:
+        raise KeyError(f'{x} no tiene el formato numerico adecuado') 
 
 
 
