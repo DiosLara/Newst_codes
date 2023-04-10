@@ -187,8 +187,8 @@ def vector2xy(vector,w,h,dim=700,nameimg="image",angle=0):
         else:
             tipo="terreno"
         if int(xw)!=0 and int(yw)!=0:# and (xw/yw<=3.2 and yw/xw<=3.2):
-            s.append([tipo,start_point_im,end_point_im,start_point_100,end_point_100,area,conf,nameimg])
-    df_cache=pd.DataFrame(s,columns=["Tipo","start_point_im","end_point_im","start_point_100","end_point_100","area","conf","imagen"])
+            s.append([tipo,start_point_im,end_point_im,start_point_100,end_point_100,area,conf,nameimg,str_v])
+    df_cache=pd.DataFrame(s,columns=["Tipo","start_point_im","end_point_im","start_point_100","end_point_100","area","conf","imagen","vector_o"])
     df_cache.drop_duplicates().reset_index(drop=True,inplace=True)
     return df_cache
     
