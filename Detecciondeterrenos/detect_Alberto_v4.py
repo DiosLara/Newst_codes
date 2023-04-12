@@ -243,7 +243,7 @@ def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_ter
             for j in range(ancho):#ancho
                 for i in range(alto):#alto
                     generar=0
-                    label=raster.replace('//','/').split('/')[-1][:-4]+'_'
+                    label=raster.replace('\\','/').split('/')[-1][:-4]+'_'
                     nameimg=label.lower()+str(i)+'_'+str(j)
                     cuadro=[]
                     for k in range(2):
@@ -270,6 +270,7 @@ def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_ter
                         imagen_n = np.stack(four_images, axis=-1)
                         if imsave:
                             cv2.imwrite(path+"/"+nameimg+".png",imagen_n)
+                            # print(path+"/"+nameimg+".png")
                         if angulo_get!=0:
                             angulo=-angulo_get
                         else:
@@ -389,8 +390,9 @@ class alexnet():
     def __init__(self,weights,num_classes,idx_to_class):
         """inicializa el model, con los pesos entrenados"""
         alexnet=models.alexnet(pretrained=True)
-        checkpoint=torch.load(weights)
-        summary(alexnet, (3, 224, 224))
+        self.device = torch.device(0 if torch.cuda.is_available() else "cpu")
+        checkpoint=torch.load(weights,map_location=self.device)
+        # 
         alexnet.features[1]= nn.Hardtanh()
         alexnet.classifier[6] = nn.Linear(4096, 4096)
         alexnet.classifier.add_module("7",nn.Softplus())
@@ -406,7 +408,7 @@ class alexnet():
         # alexnet.classifier[6] = nn.Linear(4096, num_classes)
         # alexnet.classifier.add_module("7", nn.LogSoftmax(dim = 1))
         alexnet.load_state_dict(checkpoint['model_state_dict'])
-        self.device = torch.device(0 if torch.cuda.is_available() else "cpu")
+        summary(alexnet, (3, 224, 224))
         self.model=alexnet
         self.idx_to_class=idx_to_class
     
