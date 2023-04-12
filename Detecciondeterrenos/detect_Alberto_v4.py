@@ -237,7 +237,7 @@ def map_d(x, in_min, in_max, out_min, out_max):
     """Genera una interpolacion para pasar de un rango a otro"""
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
-def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_terreno,clase_terreno,raster,ancho,alto,dim,minx,maxx,miny,maxy,shape,angulo_get=0,opt_conf_thres=0.05,imshow=False):
+def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_terreno,clase_terreno,raster,ancho,alto,dim,minx,maxx,miny,maxy,shape,angulo_get=0,opt_conf_thres=0.05,imshow=False,imsave=False,path=""):
     with rasterio.open(raster) as src:
         with tqdm.tqdm(total=alto*ancho) as pbar:
             for j in range(ancho):#ancho
@@ -268,6 +268,8 @@ def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_ter
                             continue
                         four_images=[array[2],array[1],array[0]]
                         imagen_n = np.stack(four_images, axis=-1)
+                        if imsave:
+                            cv2.imwrite(path+"/"+nameimg+".png",imagen_n)
                         if angulo_get!=0:
                             angulo=-angulo_get
                         else:
@@ -388,11 +390,21 @@ class alexnet():
         """inicializa el model, con los pesos entrenados"""
         alexnet=models.alexnet(pretrained=True)
         checkpoint=torch.load(weights)
-        for param in alexnet.parameters():
-            param.requires_grad = False
-        alexnet.classifier[6] = nn.Linear(4096, num_classes)
-        alexnet.classifier.add_module("7", nn.LogSoftmax(dim = 1))
         summary(alexnet, (3, 224, 224))
+        alexnet.features[1]= nn.Hardtanh()
+        alexnet.classifier[6] = nn.Linear(4096, 4096)
+        alexnet.classifier.add_module("7",nn.Softplus())
+        alexnet.classifier.add_module("8", nn.Linear(4096, 4096))
+        alexnet.classifier.add_module("9",nn.Softplus())
+        alexnet.classifier.add_module("10", nn.Linear(4096, 2048))
+        alexnet.classifier.add_module("11", nn.Softplus())
+        alexnet.classifier.add_module("12", nn.Linear(2048, num_classes))
+        alexnet.classifier.add_module("13", nn.Softplus())
+        alexnet.classifier.add_module("14",  nn.LogSoftmax(dim = 1))
+        # for param in alexnet.parameters():
+        #     param.requires_grad = False
+        # alexnet.classifier[6] = nn.Linear(4096, num_classes)
+        # alexnet.classifier.add_module("7", nn.LogSoftmax(dim = 1))
         alexnet.load_state_dict(checkpoint['model_state_dict'])
         self.device = torch.device(0 if torch.cuda.is_available() else "cpu")
         self.model=alexnet
@@ -406,7 +418,7 @@ class alexnet():
             x=padding(x)
         x=cv2.resize(x,(224,224))
         x=x.astype("float32")
-        x=x/255
+        x=x/255*2-1
         x=np.moveaxis(x,-1,0)
         x = np.expand_dims(x, axis=0)
         img = torch.from_numpy(x).to(self.device)
@@ -420,10 +432,10 @@ class alexnet():
         x = np.asarray(image)
         if pad:
             x=padding(x)
-            imagen=x.copy()
+        imagen=x.copy()
         x=cv2.resize(x,(224,224))
         x=x.astype("float32")
-        x=x/255
+        x=x/255*2-1
         x=np.moveaxis(x,-1,0)
         x = np.expand_dims(x, axis=0)
         img = torch.from_numpy(x).to(self.device)
