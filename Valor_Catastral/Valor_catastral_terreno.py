@@ -10,9 +10,14 @@ def factor_frente(x,p):
         x: Longitud del frente expresada en metros lineales
         p: cadena de texto del tipo de posición del terreno
     '''
+    if p=='Interior':
+        return 1
     if isinstance(x,float) or isinstance(x, int):
-        if p=='Interior' or x>=3.5 : return 1
-        else: return round(x/3.5,5)
+        if x>=3.5 : return 1
+        else: 
+            valor = round(x/3.5,5)
+            if valor <= 0.5:return 0.5
+            else: return valor
     else:
         print('Tipo de dato de no valido, verifique que sea numerico (int or float)')
 
@@ -25,11 +30,15 @@ def factor_fondo(f, fb, p):
         fb: Fondo base determinado según la tabla de valores unitarios
         p: cadena de texto del tipo de posición del terreno
     '''
+    if p=='Interior' : return 1
     if (isinstance(f,float) or isinstance(f, int)) and (isinstance(fb,float) or isinstance(fb, int)):
         if p in ['Manzanero','Cabecero','Frentes_no_contiguos']:
             f=f/2
-        if p=='Interior' or f<=fb: return 1        
-        else: return round(0.6 + ((fb/f)*0.4),5)  
+        if  f<=fb: return 1        
+        else: 
+            valor = round(0.6 + ((fb/f)*0.4),5)  
+            if valor <= 0.6: return 0.6
+            else: return valor
     else:
         print('Tipos de datos de no validos, verifique que sean numericos (int or float)')
 
@@ -43,8 +52,12 @@ def factor_irregularidad(s,ai,p,r=''):
         r: Indicador de regularidad del poligono (0 para no regular, 1 para regular)
         p: cadena de texto del tipo de posición del terreno
         '''
+    if p=='Interior': return 1
     if (isinstance(ai,float) or isinstance(ai, int)) and (isinstance(s,float) or isinstance(s, int)):
-        if  p!='Interior': return round(0.5 + ((ai/2)/s),5)   #r==0 or
+        if  p!='Interior': 
+            valor = round(0.5 + ((ai/2)/s),5) 
+            if valor < 0.5: return 0.5
+            else: return valor
         else: return 1
     else:
         print('Tipos de datos de no valido, verifique que sean numericos (int or float)')
@@ -57,10 +70,14 @@ def factor_area(s,ab,p):
         s: Superficie del terreno expresada en metros cuadrados
         ab: Área base determinada según la tabla de valores unitarios
         p: cadena de texto del tipo de posición del terreno
-        '''
+    '''
+    if p=='Interior' : return 1 
     if (isinstance(s,float) or isinstance(s, int)) and (isinstance(ab,float) or isinstance(ab, int)):
         if s<=ab or p=='Interior': return 1
-        else: return round(0.7 + ((ab/s)*0.3),5)         
+        else: 
+            valor = round(0.7 + ((ab/s)*0.3),5)         
+            if valor < 0.7: return 0.7
+            else: return valor
     else:
         print('Tipos de datos de no validos, verifique que sean numericos (int or float)')
 
@@ -74,10 +91,11 @@ def factor_topografia(h,f,p,i=''):
         i: indicador de inclinación (0 a nivel de la banqueta, 1 inclinado)
         p: cadena de texto del tipo de posición del terreno
         '''
+    if p=='Interior' : return 1
     if (isinstance(f,float) or isinstance(f, int)) and (isinstance(h,float) or isinstance(h, int)):
         if  p=='Interior': return 1   # i==0 or
         else: 
-            if round(1 - ((h/2)/f),5) >= 0: return round(1 - ((h/2)/f),5)
+            if round(1 - ((h/2)/f),5) >= 0.5  : return round(1 - ((h/2)/f),5)
             else: return 0.5
     else:
         print('Tipos de datos de no validos, verifique que sean numericos (int or float)')
@@ -111,7 +129,10 @@ def factor_restriccion(s,aa,p):
         '''
     if (isinstance(aa,float) or isinstance(aa, int)) and (isinstance(s,float) or isinstance(s, int)):
         if p.capitalize()=='Interior': return 1
-        else: return round(0.5 + ((aa/2)/s),5)  
+        else: 
+            valor = round(0.5 + ((aa/2)/s),5)  
+            if valor < 0.5: return 0.5
+            else: return valor
     else:
         print('Tipos de datos de no validos, verifique que sean numericos (int or float)')
 

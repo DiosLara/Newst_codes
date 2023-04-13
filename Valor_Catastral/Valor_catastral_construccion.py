@@ -23,6 +23,7 @@ def factor_grado_conservacion(g):
         return round(grados[g],5)
     else:
         print('Tipo de dato no valido, verifique que sea una cadena de texto')
+        return 0.4
 
 def factor_numero_niveles(nn,g):
     '''
