@@ -2,8 +2,48 @@
 import pandas as pd
 import random
 
+def Categorizar_por_intervalos(x:int, li:int, ls:int):
+    '''
+(Function)
+    Esta funcion retorna un 1 si el valor ingresado esta en el intervalo definido
+    de  lo contrario regresa un 0, en caso de ser un tipo de dato no valido
+    returna un 9
+(Parameters)
+    - x: Valor que se desea clasificar
+    - li: Limite inferior
+    - ls: Limite superior
+(Author)
+    Hector Limon
+    '''
+    if isinstance(x,int) or isinstance(x,float):
+        if x<=ls and x>= li:
+            return 1
+        else:
+            return 0
+    else:
+        raise KeyError(f'{x} no tiene el formato numerico adecuado') 
 
 
+def get_grado_conservacion():
+    '''
+(Function)
+    Esta funcion genera el grado de conservacion como una variable aleatoria con ciertos pesos
+    ya que asumo que no tenemos una distribucion uniforme entre cada tipo de conservacion.
+    Existen los sig. tipos con sus respectivos pesos que asociamos;
+    'Bueno':0.15,'Normal':0.3,'Regular':0.25,'Malo':0.25,'Ruinoso':0.05
+(Author)
+    Hector Limon
+    '''
+    va = random.random()
+    # print(va)
+    if va < 0.05:   return 'Ruinoso'
+    elif va < 0.3:  return 'Malo'
+    elif va < 0.55: return 'Regular'
+    elif va < 0.85: return 'Normal'
+    else:           return 'Bueno'
+   
+    
+    
 def get_factor_edad_va(x=''):
     return  round(random.uniform(0.6,1),5)
 
@@ -23,6 +63,7 @@ def factor_grado_conservacion(g):
         return round(grados[g],5)
     else:
         print('Tipo de dato no valido, verifique que sea una cadena de texto')
+        return 0.4
 
 def factor_numero_niveles(nn,g):
     '''
