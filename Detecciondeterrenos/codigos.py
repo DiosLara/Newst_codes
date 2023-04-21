@@ -247,3 +247,63 @@ def generar_mosaico_v2(raster:str,output_path:str,mode:bool=False, dim:int=1024 
 
                 with rasterio.open(output_file, "w", **out_meta) as dest:
                     dest.write(out_image)
+
+def clasificacion_images(carpeta_imagenes_leer:str, carpeta_images_move:str):
+    import shutil
+    import tqdm
+    import glob
+    from PIL import Image
+    import numpy as np
+
+    '''
+    (Function)
+        Esta funcion es muy util para revisar muchas imagenes y determinar si quieres que se quede en la carpeta
+        o moverla a otra
+    (Paramaters)
+        - carpeta_imagenes_leer: Ruta de la carpeta que tiene imagenes, no poner ultimo slash
+        - carpeta_images_move: Ruta de la carpeta a donde quiere que se vallan las imagenes.
+    (Author)
+        - Hector Limon
+    (Example)
+        carpeta_imagenes_leer = '/home/hector/Imágenes/Screenshots'
+        carpeta_images_move = '/home/hector/Imágenes/Prueba'
+        clasificacion_images(carpeta_imagenes_leer, carpeta_images_move)
+    '''
+
+    
+    images_all = glob.glob(carpeta_imagenes_leer+'/*')
+    print("Menú para carpetas : ")
+    i=0
+    for key in carpeta_images_move:
+        print(i,"->",key)
+        i+=1
+    for ruta_imagen in tqdm.tqdm(images_all):  
+        imagen = Image.open(ruta_imagen)
+        imagen.resize((120,120))
+        imagen.show()
+
+        nombre_image = ruta_imagen.replace('\\','/').split('/')[-1]
+        ans = input('Quieres conservar?')
+        try:
+
+            if ans == '0':
+                #Se va a mover al 1er elemento del diccionario
+
+                shutil.move(ruta_imagen, carpeta_images_move[list(carpeta_images_move.keys())[0]]+'/'+nombre_image)
+            elif ans == '1':
+                shutil.move(ruta_imagen, carpeta_images_move[list(carpeta_images_move.keys())[1]]+'/'+nombre_image)
+            elif ans == '2':
+                shutil.move(ruta_imagen, carpeta_images_move[list(carpeta_images_move.keys())[2]]+'/'+nombre_image)
+            elif ans == '3':
+                shutil.move(ruta_imagen, carpeta_images_move[list(carpeta_images_move.keys())[3]]+'/'+nombre_image)
+            elif ans == '4':
+                shutil.move(ruta_imagen, carpeta_images_move[list(carpeta_images_move.keys())[4]]+'/'+nombre_image)
+            elif ans == '5':
+                shutil.move(ruta_imagen, carpeta_images_move[list(carpeta_images_move.keys())[5]]+'/'+nombre_image)
+            
+            imagen.close()
+        except Exception as e:
+            print('El diccionario debe tener al menos 6 elementos',e)
+            pass
+
+
