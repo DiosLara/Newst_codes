@@ -337,16 +337,17 @@ def shape_transform(shape):
     """Convierte el shape en dataframe de coordenadas que engloba el polygon del shape para delimitar el raster"""
     c=[]
     angulo_manzana=[]
-    for manzana in range(len(shape)):
-        proyecciones1=mapping(shape['geometry'][manzana]).get('coordinates')
-        angulos=[]
-        d=[]
-        poly=pd.DataFrame(proyecciones1[0])
-        for point in range(1,len(poly)):
-            d.append(((poly[1][point]-poly[1][point-1])**2+(poly[0][point]-poly[0][point-1])**2))
-            angulos.append(math.atan(((poly[1][point]-poly[1][point-1])/(poly[0][point]-poly[0][point-1])))*180/math.pi)
-        angulo_manzana.append(angulos[d.index(max(d))])
-    shape["angulo_manzana"]=angulo_manzana
+
+    # for manzana in range(len(shape)):
+    #     proyecciones1=mapping(shape['geometry'][manzana]).get('coordinates')
+    #     angulos=[]
+    #     d=[]
+    #     poly=pd.DataFrame(proyecciones1[0])
+    #     for point in range(1,len(poly)):
+    #         d.append(((poly[1][point]-poly[1][point-1])**2+(poly[0][point]-poly[0][point-1])**2))
+    #         angulos.append(math.atan(((poly[1][point]-poly[1][point-1])/(poly[0][point]-poly[0][point-1])))*180/math.pi)
+    #     angulo_manzana.append(angulos[d.index(max(d))])
+    shape["angulo_manzana"]=0
     shape["geometry"]=shape["geometry"].envelope
     for manzana in range(len(shape)):
         proyecciones1=mapping(shape['geometry'][manzana]).get('coordinates')
@@ -367,11 +368,15 @@ def shape_transform(shape):
     
 def ampliar_shape(shape,factor_ampliacion=2):
     """Amplifica el polygon de cada manzana con el fin de extrar imagenes sin perder informacion de la manzana"""
-    shape["geometry"]=shape["geometry"].envelope
+    shape["geometry"]=shape["geometry"]
     shape['centroid']=shape.centroid
     geometry=[]
+    clase=[]
     for i,polygon in enumerate(shape['geometry']):
-        point=mapping(shape['centroid'][i]).get('coordinates')
+        try:
+            point=mapping(shape['centroid'][i]).get('coordinates')
+        except:
+            continue
         x=point[0]
         y=point[1]
         go=[]
@@ -383,7 +388,8 @@ def ampliar_shape(shape,factor_ampliacion=2):
             y2=y+(y1-y)*factor_ampliacion
             go.append((x2,y2))
         geometry.append(Polygon(go))
-    return gpd.GeoDataFrame(shape["cve_cat"],geometry=geometry)
+        clase.append(shape.loc[i,"clase_dete"])
+    return gpd.GeoDataFrame({"clase_dete":clase},geometry=geometry)
 
 # idx_to_class={0: 'area_verde', 1: 'carros', 2: 'casas', 3: 'en_construccion', 4: 'establecimiento', 5: 'multivivienda', 6: 'terreno_baldio'}
 class alexnet():
@@ -423,10 +429,11 @@ class alexnet():
         x=x/255*2-1
         x=np.moveaxis(x,-1,0)
         x = np.expand_dims(x, axis=0)
-        img = torch.from_numpy(x).to(self.device)
-        res=list(self.model(img).cpu().detach().numpy()[0])
-        indice=res.index(max(res))
-        clase=self.idx_to_class.get(indice)
+        with torch.no_grad():
+            img = torch.from_numpy(x).to(self.device)
+            res=list(self.model(img).cpu().detach().numpy()[0])
+            indice=res.index(max(res))
+            clase=self.idx_to_class.get(indice)
         return clase 
     
     def predict_image(self,image,pad=True):
@@ -440,10 +447,11 @@ class alexnet():
         x=x/255*2-1
         x=np.moveaxis(x,-1,0)
         x = np.expand_dims(x, axis=0)
-        img = torch.from_numpy(x).to(self.device)
-        res=list(self.model(img).cpu().detach().numpy()[0])
-        indice=res.index(max(res))
-        clase=self.idx_to_class.get(indice)
+        with torch.no_grad():
+            img = torch.from_numpy(x).to(self.device)
+            res=list(self.model(img).cpu().detach().numpy()[0])
+            indice=res.index(max(res))
+            clase=self.idx_to_class.get(indice)
         return clase, imagen 
     
 def padding(img):
