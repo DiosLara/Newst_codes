@@ -253,21 +253,32 @@ def clasificacion_images(carpeta_imagenes_leer:str, carpeta_images_move:str):
     import tqdm
     import glob
     from PIL import Image
+    from os import remove
     import numpy as np
 
     '''
     (Function)
-        Esta funcion es muy util para revisar muchas imagenes y determinar si quieres que se quede en la carpeta
+        Esta función es muy útil para revisar muchas imágenes y determinar si quieres que se quede en la carpeta
         o moverla a otra
     (Paramaters)
-        - carpeta_imagenes_leer: Ruta de la carpeta que tiene imagenes, no poner ultimo slash
-        - carpeta_images_move: Ruta de la carpeta a donde quiere que se vallan las imagenes.
+        - carpeta_imagenes_leer: Ruta de la carpeta que tiene imágenes, no poner último slash
+        - carpeta_images_move: Ruta de la carpeta a donde quiere que se vayan las imágenes.
     (Author)
-        - Hector Limon
+        - Hector Limon & Fernanda Peñuelas
     (Example)
-        carpeta_imagenes_leer = '/home/hector/Imágenes/Screenshots'
-        carpeta_images_move = '/home/hector/Imágenes/Prueba'
-        clasificacion_images(carpeta_imagenes_leer, carpeta_images_move)
+        carpeta_imagenes_leer = '/home/hector/Imágenes/Screenshots' #Carpeta inicial
+        diccionario: 
+        folders = {    
+        'carpeta_images_move_auto' : r"H:\.shortcut-targets-by-id\1sAMR22XRKV96FFQI8LwPvsm4LWzp9sDA\alexnet_ultimo\train\carros",
+        'carpeta_images_move_casas': r"H:\.shortcut-targets-by-id\1sAMR22XRKV96FFQI8LwPvsm4LWzp9sDA\alexnet_ultimo\train\casas",
+        'carpeta_images_move_multi' : r"H:\.shortcut-targets-by-id\1sAMR22XRKV96FFQI8LwPvsm4LWzp9sDA\alexnet_ultimo\train\multivivienda",
+        'carpeta_images_move_estab' : r"H:\.shortcut-targets-by-id\1sAMR22XRKV96FFQI8LwPvsm4LWzp9sDA\alexnet_ultimo\train\establecimiento",
+        'carpeta_images_move_const' : r"H:\.shortcut-targets-by-id\1sAMR22XRKV96FFQI8LwPvsm4LWzp9sDA\alexnet_ultimo\train\en_construccion",
+        'carpeta_images_move_terreno' : r"H:\.shortcut-targets-by-id\1sAMR22XRKV96FFQI8LwPvsm4LWzp9sDA\alexnet_ultimo\train\terreno_baldio",
+        'Basura':''
+        }
+
+        clasificacion_images(carpeta_imagenes_leer, folders)
     '''
 
     
@@ -283,7 +294,7 @@ def clasificacion_images(carpeta_imagenes_leer:str, carpeta_images_move:str):
         imagen.show()
 
         nombre_image = ruta_imagen.replace('\\','/').split('/')[-1]
-        ans = input('Quieres conservar?')
+        ans = input('¿A cuál carpeta quieres mover?')
         try:
 
             if ans == '0':
@@ -300,10 +311,13 @@ def clasificacion_images(carpeta_imagenes_leer:str, carpeta_images_move:str):
                 shutil.move(ruta_imagen, carpeta_images_move[list(carpeta_images_move.keys())[4]]+'/'+nombre_image)
             elif ans == '5':
                 shutil.move(ruta_imagen, carpeta_images_move[list(carpeta_images_move.keys())[5]]+'/'+nombre_image)
-            
+            elif ans == '6':
+                remove(ruta_imagen)
+
             imagen.close()
+            
         except Exception as e:
-            print('El diccionario debe tener al menos 6 elementos',e)
+            print('El diccionario debe tener al menos 7 elementos',e)
             pass
 
 
