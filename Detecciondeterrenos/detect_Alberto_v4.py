@@ -422,6 +422,7 @@ class alexnet():
         """Genera prediccion sobre archivo"""
         x = Image.open(file)
         x = np.asarray(x)
+        x=np.stack([x[:,:,0],x[:,:,1],x[:,:,2]], axis=-1)
         if pad:
             x=padding(x)
         x=cv2.resize(x,(224,224))
@@ -439,6 +440,7 @@ class alexnet():
     def predict_image(self,image,pad=True):
         """Generar predeccion de clase sobre imagen precargada"""
         x = np.asarray(image)
+        x=np.stack([x[:,:,0],x[:,:,1],x[:,:,2]], axis=-1)
         if pad:
             x=padding(x)
         imagen=x.copy()
