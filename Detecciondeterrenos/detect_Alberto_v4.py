@@ -237,7 +237,10 @@ def map_d(x, in_min, in_max, out_min, out_max):
     """Genera una interpolacion para pasar de un rango a otro"""
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
-def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_terreno,clase_terreno,raster,ancho,alto,dim,minx,maxx,miny,maxy,shape,angulo_get=0,opt_conf_thres=0.05,imshow=False,imsave=False,path=""):
+def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,
+                terreno,conf_terreno,clase_terreno,raster,ancho,alto,
+                dim,minx,maxx,miny,maxy,shape,angulo_get=0,opt_conf_thres=0.05,
+                imshow=False,imsave=False,path="",clasificar:bool=True):
     with rasterio.open(raster) as src:
         with tqdm.tqdm(total=alto*ancho) as pbar:
             for j in range(ancho):#ancho
@@ -282,6 +285,7 @@ def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_ter
                         with torch.no_grad():
                             vector=Modelo.detect(opt_source="cache1.png",opt_conf_thres=opt_conf_thres,imagen_s=image_ro)
                         proyecciones=shapes[0].get('coordinates')[0][:-1]
+                        # Vector de deteccion de yolov
                         df_cache=vector2xy(vector,w,h,dim=dim,nameimg=nameimg)
                         for cs_1 in (range(len(df_cache))):
     #                         x1,y1=df_cache.loc[cs_1,'start_point_im']
@@ -297,7 +301,10 @@ def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_ter
                             x2,y2=df_cache.loc[cs_1,'end_point_im']
                             df_aux=image_ro.copy()
                             df_aux=df_aux[y1:y2,x1:x2]
-                            clase,imagen=model_class.predict_image(df_aux)
+                            if clasificar:
+                                clase,imagen=model_class.predict_image(df_aux)
+                            else:
+                                clase = 'No_Aplica'
                             if df_cache['Tipo'][cs_1]=='casa':
                                 if np.sum(df_aux)>500:
                                     casas.append(rotacion_detect(df_cache.loc[cs_1,'start_point_100'], df_cache.loc[cs_1,'end_point_100'],-angulo,proyecciones,w,h,dim))
