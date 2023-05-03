@@ -425,43 +425,44 @@ class alexnet():
         self.model=alexnet
         self.idx_to_class=idx_to_class
     
-    def predict_file(self,file,pad=True):
-        """Genera prediccion sobre archivo"""
-        x = Image.open(file)
-        x = np.asarray(x)
-        x=np.stack([x[:,:,0],x[:,:,1],x[:,:,2]], axis=-1)
-        if pad:
-            x=padding(x)
-        x=cv2.resize(x,(224,224))
-        x=x.astype("float32")
-        x=x/255*2-1
-        x=np.moveaxis(x,-1,0)
-        x = np.expand_dims(x, axis=0)
-        with torch.no_grad():
-            img = torch.from_numpy(x).to(self.device)
-            res=list(self.model(img).cpu().detach().numpy()[0])
-            indice=res.index(max(res))
-            clase=self.idx_to_class.get(indice)
-        return clase 
-    
-    def predict_image(self,image,pad=True):
-        """Generar predeccion de clase sobre imagen precargada"""
-        x = np.asarray(image)
-        x=np.stack([x[:,:,0],x[:,:,1],x[:,:,2]], axis=-1)
-        if pad:
-            x=padding(x)
-        imagen=x.copy()
-        x=cv2.resize(x,(224,224))
-        x=x.astype("float32")
-        x=x/255*2-1
-        x=np.moveaxis(x,-1,0)
-        x = np.expand_dims(x, axis=0)
-        with torch.no_grad():
-            img = torch.from_numpy(x).to(self.device)
-            res=list(self.model(img).cpu().detach().numpy()[0])
-            indice=res.index(max(res))
-            clase=self.idx_to_class.get(indice)
-        return clase, imagen 
+def predict_file(self,file,pad=True):
+    """Genera prediccion sobre archivo"""
+    # x = Image.open(file)
+    # x = np.asarray(x)
+    # x=np.stack([x[:,:,0],x[:,:,1],x[:,:,2]], axis=-1)
+    x=cv2.imread(file)
+    if pad:
+        x=padding(x)
+    x=cv2.resize(x,(224,224))
+    x=x.astype("float32")
+    x=x/255*2-1
+    x=np.moveaxis(x,-1,0)
+    x = np.expand_dims(x, axis=0)
+    with torch.no_grad():
+        img = torch.from_numpy(x).to(self.device)
+        res=list(self.model(img).cpu().detach().numpy()[0])
+        indice=res.index(max(res))
+        clase=self.idx_to_class.get(indice)
+    return clase 
+
+def predict_image(self,image,pad=True):
+    """Generar predeccion de clase sobre imagen precargada"""
+    x = np.array(image)
+    # x=np.stack([x[:,:,0],x[:,:,1],x[:,:,2]], axis=-1)
+    if pad:
+        x=padding(x)
+    imagen=x.copy()
+    x=cv2.resize(x,(224,224))
+    x=x.astype("float32")
+    x=x/255*2-1
+    x=np.moveaxis(x,-1,0)
+    x = np.expand_dims(x, axis=0)
+    with torch.no_grad():
+        img = torch.from_numpy(x).to(self.device)
+        res=list(self.model(img).cpu().detach().numpy()[0])
+        indice=res.index(max(res))
+        clase=self.idx_to_class.get(indice)
+    return clase, imagen
     
 def padding(img):
     """Escala la imagen y completa el sobrante con franjas negras, para no perder proporciones"""                
