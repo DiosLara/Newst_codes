@@ -15,7 +15,7 @@ from shapely.geometry import Point
 diccionarios= {'Naucalpan':
     {'inegi': {
             'path': r'C:\Users\dlara\ECATEPEC_MANZANAS_INEGI.shp',
-            'key_manzana': 'CVEGEO',
+            'key_manzana': 'CVEMZA',
             'key_conteo': 'CONTEO_INEGI', # Columna en la que se va a guardar el conteo 
             'key_municipio': 'CVE_MUN',
             'key_agregacion': 'TVIVHAB'
@@ -122,8 +122,8 @@ class prep:
         Si las zonas verdes son necesarias, se leeran desde una carpeta especial y se aplicara un overlay (para quitarlas)'''
         
         # Corta en caso de que las manzanas no existen en censo y en inegi sí
-        m_inegi.loc[(~m_inegi['CVEGEO_MANZANA'].isin(conteo_censo['CVEGEO_MANZANA'])), 'CVELOC']=m_inegi.loc[(~m_inegi['CVEGEO_MANZANA'].isin(conteo_censo['CVEGEO_MANZANA']))]['CVEGEO_MANZANA'].astype(str).str[:-7]
-        m_inegi.loc[(~m_inegi['CVEGEO_MANZANA'].isin(conteo_censo['CVEGEO_MANZANA'])), 'CVEGEO_MANZANA']=m_inegi.loc[(~m_inegi['CVEGEO_MANZANA'].isin(conteo_censo['CVEGEO_MANZANA']))]['CVEGEO_MANZANA'].astype(str).str[:-7]
+        m_inegi.loc[(~m_inegi['CVEMZA_MANZANA'].isin(conteo_censo['CVEMZA_MANZANA'])), 'CVELOC']=m_inegi.loc[(~m_inegi['CVEMZA_MANZANA'].isin(conteo_censo['CVEMZA_MANZANA']))]['CVEMZA_MANZANA'].astype(str).str[:-7]
+        m_inegi.loc[(~m_inegi['CVEMZA_MANZANA'].isin(conteo_censo['CVEMZA_MANZANA'])), 'CVEMZA_MANZANA']=m_inegi.loc[(~m_inegi['CVEMZA_MANZANA'].isin(conteo_censo['CVEMZA_MANZANA']))]['CVEMZA_MANZANA'].astype(str).str[:-7]
         m_inegi.loc[m_inegi.convex_hull.area> m_inegi.area, 'Tipo polígono'] = 'IRREGULAR'
         m_inegi.loc[m_inegi.convex_hull.area<= m_inegi.area, 'Tipo polígono'] = 'REGULAR'
         T_INEGI=m_inegi.loc[m_inegi['TIPOMZA']!='Contenedora'].overlay(m_inegi.loc[(m_inegi['TIPOMZA']=='Contenedora')], how='symmetric_difference')
@@ -131,12 +131,12 @@ class prep:
             T_INEGI[cols.replace('_1','')]=T_INEGI[cols].combine_first(T_INEGI[cols.replace('_1','_2')])
         T_INEGI=T_INEGI[T_INEGI.columns[~T_INEGI.columns.str.contains('_1|_2')]]
         T_INEGI2=pd.concat([T_INEGI,m_inegi.loc[m_inegi['TIPOMZA']=='Contenida']], axis=0)
-        mm_inegi=pd.concat([T_INEGI2,m_inegi.loc[~m_inegi['CVEGEO'].isin(T_INEGI2['CVEGEO'])]], axis=0)
+        mm_inegi=pd.concat([T_INEGI2,m_inegi.loc[~m_inegi['CVEMZA'].isin(T_INEGI2['CVEMZA'])]], axis=0)
         mm_inegi=gpd.GeoDataFrame(mm_inegi, geometry='geometry', crs='EPSG:3006')
-        mm_inegi.dissolve('CVEGEO_MANZANA').reset_index()
-        mm_inegi['CVEGEO_MANZANA']=mm_inegi['CVEGEO_MANZANA'].astype(str)
-        m1=mm_inegi.dissolve('CVEGEO_MANZANA').reset_index()
-        S=m1.merge(conteo_censo.drop(columns= ['CVEGEO']), on='CVEGEO_MANZANA')
+        mm_inegi.dissolve('CVEMZA_MANZANA').reset_index()
+        mm_inegi['CVEMZA_MANZANA']=mm_inegi['CVEMZA_MANZANA'].astype(str)
+        m1=mm_inegi.dissolve('CVEMZA_MANZANA').reset_index()
+        S=m1.merge(conteo_censo.drop(columns= ['CVEMZA']), on='CVEMZA_MANZANA')
         if z_verdes== True:
             av= gpd.read_file(self.areas_verdes_path)
             av=av.to_crs(3006)
@@ -189,7 +189,7 @@ class prep:
     def data_prep_catastro(path_base, path_shp):
         BPCE = pd.read_csv(path_base, encoding='utf-8-sig',
                             header=0, engine='python')
-        BPCE['CVEGEO'] = BPCE['CVEGEO'].astype(str).str.zfill(16)
+        BPCE['CVEMZA'] = BPCE['CVEMZA'].astype(str).str.zfill(16)
         m_igecem = gpd.read_file(path_shp) ##Lee desde shp
 
         m_igecem = m_igecem.to_crs(4326)
@@ -197,7 +197,7 @@ class prep:
             m_igecem = m_igecem.loc[~m_igecem['manz'].astype(str).str.endswith('000')]
         except: 
             pass
-        BPCE['CVEGEO'] = BPCE['ESTIMADO'].str[4:12] + '00000000'
+        BPCE['CVEMZA'] = BPCE['ESTIMADO'].str[4:12] + '00000000'
 
         BPCE['CLAVE_PREDIO'] = BPCE['ESTIMADO'].str[4:14]
         BPCE.loc[BPCE['CURT'] == ' ', 'CURT'] = float('NaN')
@@ -217,11 +217,11 @@ class prep:
         BPCE = pd.concat([BPCE.loc[BPCE['CURT'].isna()], curts], axis=0)
         predios = BPCE.drop_duplicates('CLAVE_PREDIO')
         
-        m_igecem['CVEGEO']= m_igecem['CVEGEO'].astype(str).str.zfill(16)
-        # test_igecem = m_igecem.merge(BPCE.groupby('CVEGEO').count().reset_index()[
-        #                             ['ESTIMADO', 'CURT', 'CVEGEO']],on='CVEGEO')
+        m_igecem['CVEMZA']= m_igecem['CVEMZA'].astype(str).str.zfill(16)
+        test_igecem = m_igecem.merge(BPCE.groupby('CVEMZA').count().reset_index()[
+            ['ESTIMADO', 'CURT', 'CVEMZA']],on='CVEMZA')
         # # predios=predios.loc[(predios['CATASTRO_DOMICILIO_INMUEBLE_CONSTRUIDO'].astype(str).str.replace('S/N','NaN').str.split('NUMERO INTERIOR').str[1]!='NaN') & (predios['CATASTRO_DOMICILIO_INMUEBLE_CONSTRUIDO'].astype(str).str.replace('S/N','NaN').str.split('NUMERO INTERIOR').str[1].notna())]
-        test_igecem= m_igecem
+        # test_igecem= m_igecem
         test_igecem.rename(
             columns={'ESTIMADO': 'CLAVESXMANZANA'}, inplace=True)
         test_igecem.sort_values('CLAVESXMANZANA', ascending=False, inplace=True)
