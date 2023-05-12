@@ -14,8 +14,8 @@ from shapely.geometry import Point
 
 diccionarios= {'Naucalpan':
     {'inegi': {
-            'path': r'C:\Users\dlara\ECATEPEC_MANZANAS_INEGI.shp',
-            'key_manzana': 'CVEMZA',
+            'path': r'C:\Users\dlara\ECATEPEC_PREDIOS_INEGI.shp',
+            'key_PREDIO': 'CVEMZA',
             'key_conteo': 'CONTEO_INEGI', # Columna en la que se va a guardar el conteo 
             'key_municipio': 'CVE_MUN',
             'key_agregacion': 'TVIVHAB'
@@ -98,7 +98,7 @@ class prep:
         '''
         PB2= pd.DataFrame(columns= B2.columns)
         for cve in grouped_df[id_key]:
-            PBCPE = pd.concat([B1.loc[B1[id_key].astype(str).str.contains(cve)][['CLAVESXMANZANA','INTFIS_RS_FD_LON_1','INTFIS_RS_FD_LAT_1', 'geometry']].sort_values(['INTFIS_RS_FD_LON_1','INTFIS_RS_FD_LAT_1'], ascending=asc).reset_index(drop=True),B2.loc[B2[id_key].astype(str).str.contains(cve)].sort_values('CLAVECATASTRAL').drop(columns='geometry').reset_index(drop=True)], axis=1)
+            PBCPE = pd.concat([B1.loc[B1[id_key].astype(str).str.contains(cve)][['CLAVESXPREDIO','INTFIS_RS_FD_LON_1','INTFIS_RS_FD_LAT_1', 'geometry']].sort_values(['INTFIS_RS_FD_LON_1','INTFIS_RS_FD_LAT_1'], ascending=asc).reset_index(drop=True),B2.loc[B2[id_key].astype(str).str.contains(cve)].sort_values('CLAVECATASTRAL').drop(columns='geometry').reset_index(drop=True)], axis=1)
             PB2 = pd.concat([PB2.reset_index(drop=True), PBCPE.reset_index(drop=True)], axis=0)
         return(PB2)
     def lat_lon_final(base_geo_corr: gpd.GeoDataFrame):
@@ -117,13 +117,13 @@ class prep:
             m.to_csv()
             return(m)
     def proceso_inegi_correccion(self,m_inegi:gpd.GeoDataFrame, conteo_censo: gpd.GeoDataFrame,base_folder=str, z_verdes:gpd.GeoDataFrame=True):
-        '''Es el procesamiento de una base de inegi diferenciando manzanas contenedoras 
+        '''Es el procesamiento de una base de inegi diferenciando PREDIOs contenedoras 
         y generando elementos como el típo de polígono y la geometría deseada
         Si las zonas verdes son necesarias, se leeran desde una carpeta especial y se aplicara un overlay (para quitarlas)'''
         
-        # Corta en caso de que las manzanas no existen en censo y en inegi sí
-        m_inegi.loc[(~m_inegi['CVEMZA_MANZANA'].isin(conteo_censo['CVEMZA_MANZANA'])), 'CVELOC']=m_inegi.loc[(~m_inegi['CVEMZA_MANZANA'].isin(conteo_censo['CVEMZA_MANZANA']))]['CVEMZA_MANZANA'].astype(str).str[:-7]
-        m_inegi.loc[(~m_inegi['CVEMZA_MANZANA'].isin(conteo_censo['CVEMZA_MANZANA'])), 'CVEMZA_MANZANA']=m_inegi.loc[(~m_inegi['CVEMZA_MANZANA'].isin(conteo_censo['CVEMZA_MANZANA']))]['CVEMZA_MANZANA'].astype(str).str[:-7]
+        # Corta en caso de que las PREDIOs no existen en censo y en inegi sí
+        m_inegi.loc[(~m_inegi['CVEMZA_PREDIO'].isin(conteo_censo['CVEMZA_PREDIO'])), 'CVELOC']=m_inegi.loc[(~m_inegi['CVEMZA_PREDIO'].isin(conteo_censo['CVEMZA_PREDIO']))]['CVEMZA_PREDIO'].astype(str).str[:-7]
+        m_inegi.loc[(~m_inegi['CVEMZA_PREDIO'].isin(conteo_censo['CVEMZA_PREDIO'])), 'CVEMZA_PREDIO']=m_inegi.loc[(~m_inegi['CVEMZA_PREDIO'].isin(conteo_censo['CVEMZA_PREDIO']))]['CVEMZA_PREDIO'].astype(str).str[:-7]
         m_inegi.loc[m_inegi.convex_hull.area> m_inegi.area, 'Tipo polígono'] = 'IRREGULAR'
         m_inegi.loc[m_inegi.convex_hull.area<= m_inegi.area, 'Tipo polígono'] = 'REGULAR'
         T_INEGI=m_inegi.loc[m_inegi['TIPOMZA']!='Contenedora'].overlay(m_inegi.loc[(m_inegi['TIPOMZA']=='Contenedora')], how='symmetric_difference')
@@ -133,10 +133,10 @@ class prep:
         T_INEGI2=pd.concat([T_INEGI,m_inegi.loc[m_inegi['TIPOMZA']=='Contenida']], axis=0)
         mm_inegi=pd.concat([T_INEGI2,m_inegi.loc[~m_inegi['CVEMZA'].isin(T_INEGI2['CVEMZA'])]], axis=0)
         mm_inegi=gpd.GeoDataFrame(mm_inegi, geometry='geometry', crs='EPSG:3006')
-        mm_inegi.dissolve('CVEMZA_MANZANA').reset_index()
-        mm_inegi['CVEMZA_MANZANA']=mm_inegi['CVEMZA_MANZANA'].astype(str)
-        m1=mm_inegi.dissolve('CVEMZA_MANZANA').reset_index()
-        S=m1.merge(conteo_censo.drop(columns= ['CVEMZA']), on='CVEMZA_MANZANA')
+        mm_inegi.dissolve('CVEMZA_PREDIO').reset_index()
+        mm_inegi['CVEMZA_PREDIO']=mm_inegi['CVEMZA_PREDIO'].astype(str)
+        m1=mm_inegi.dissolve('CVEMZA_PREDIO').reset_index()
+        S=m1.merge(conteo_censo.drop(columns= ['CVEMZA']), on='CVEMZA_PREDIO')
         if z_verdes== True:
             av= gpd.read_file(self.areas_verdes_path)
             av=av.to_crs(3006)
@@ -165,7 +165,7 @@ class prep:
     def save_by_id_correcciones(base: pd.DataFrame, S: gpd.GeoDataFrame):
         return(base.to_csv('BASE_CORRECCIONES_PUNTOS_'+str(S['MUN'][0])+'.csv', encoding='utf-8-sig'))
 
-    def combinar_manzanas(base, llave='CVE_MUN', buffer=0.005) -> gpd.GeoSeries:
+    def combinar_PREDIOs(base, llave='CVE_MUN', buffer=0.005) -> gpd.GeoSeries:
         """
         Lee un zip con archivos shape, une las geometrias existentes, y regresa el poligono resultante
         """
@@ -197,35 +197,35 @@ class prep:
             m_igecem = m_igecem.loc[~m_igecem['manz'].astype(str).str.endswith('000')]
         except: 
             pass
-        BPCE['CVEMZA'] = BPCE['ESTIMADO'].str[4:12] + '00000000'
+        # BPCE['CVEMZA'] = BPCE['ESTIMADO'].str[4:12] + '00000000'
 
-        BPCE['CLAVE_PREDIO'] = BPCE['ESTIMADO'].str[4:14]
+        BPCE['CLAVE_PREDIO'] = BPCE['ESTIMADO'].str[0:10].astype(str).str.zfill(16)
         BPCE.loc[BPCE['CURT'] == ' ', 'CURT'] = float('NaN')
-        curts = BPCE.loc[BPCE['CURT'].notna()]
-        curts['LAT_DMS'] = curts['CURT'].str[:11]
-        curts['LON_DMS'] = curts['CURT'].str[11:]
-        curts['Latitude'] = curts['LAT_DMS'].astype(str).str[0:2].str.cat(curts['LAT_DMS'].astype(str).str[2:4], '°').str.cat(curts['LAT_DMS'].astype(
-            str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''N")
-        curts['Longitude'] = curts['LON_DMS'].astype(str).str[0:2].str.cat(curts['LON_DMS'].astype(str).str[2:4], '°').str.cat(curts['LON_DMS'].astype(
-            str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''W")
+        # curts = BPCE.loc[BPCE['CURT'].notna()]
+        # curts['LAT_DMS'] = curts['CURT'].str[:11]
+        # curts['LON_DMS'] = curts['CURT'].str[11:]
+        # curts['Latitude'] = curts['LAT_DMS'].astype(str).str[0:2].str.cat(curts['LAT_DMS'].astype(str).str[2:4], '°').str.cat(curts['LAT_DMS'].astype(
+        #     str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''N")
+        # curts['Longitude'] = curts['LON_DMS'].astype(str).str[0:2].str.cat(curts['LON_DMS'].astype(str).str[2:4], '°').str.cat(curts['LON_DMS'].astype(
+        #     str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''W")
 
-        curts_chunks = from_pandas(curts, npartitions=20) ## Se agrego por un bug que tiene clean_lat_long
-        curts = clean_lat_long(curts_chunks, lat_col="Latitude",
-                            long_col="Longitude", split=True)
+        # curts_chunks = from_pandas(curts, npartitions=20) ## Se agrego por un bug que tiene clean_lat_long
+        # curts = clean_lat_long(curts_chunks, lat_col="Latitude",
+        #                     long_col="Longitude", split=True)
 
-        BPCE = BPCE.loc[BPCE['CURT'].isna()]
-        BPCE = pd.concat([BPCE.loc[BPCE['CURT'].isna()], curts], axis=0)
+        # BPCE = BPCE.loc[BPCE['CURT'].isna()]
+        # BPCE = pd.concat([BPCE.loc[BPCE['CURT'].isna()], curts], axis=0)
         predios = BPCE.drop_duplicates('CLAVE_PREDIO')
         
-        m_igecem['CVEMZA']= m_igecem['CVEMZA'].astype(str).str.zfill(16)
-        test_igecem = m_igecem.merge(BPCE.groupby('CVEMZA').count().reset_index()[
-            ['ESTIMADO', 'CURT', 'CVEMZA']],on='CVEMZA')
+        m_igecem['CLAVE_PREDIO']= m_igecem['CLAVECATASTRAL'].astype(str).str.zfill(16)
+        test_igecem = m_igecem.merge(BPCE.groupby('CLAVE_PREDIO').count().reset_index()[
+            ['ESTIMADO', 'CURT', 'CLAVE_PREDIO']],on='CLAVE_PREDIO')
         # # predios=predios.loc[(predios['CATASTRO_DOMICILIO_INMUEBLE_CONSTRUIDO'].astype(str).str.replace('S/N','NaN').str.split('NUMERO INTERIOR').str[1]!='NaN') & (predios['CATASTRO_DOMICILIO_INMUEBLE_CONSTRUIDO'].astype(str).str.replace('S/N','NaN').str.split('NUMERO INTERIOR').str[1].notna())]
         # test_igecem= m_igecem
         test_igecem.rename(
-            columns={'ESTIMADO': 'CLAVESXMANZANA'}, inplace=True)
-        test_igecem.sort_values('CLAVESXMANZANA', ascending=False, inplace=True)
-        # test_igecem=test_igecem.loc[test_igecem['CLAVESXMANZANA']>1]
+            columns={'ESTIMADO': 'CLAVESXPREDIO'}, inplace=True)
+        test_igecem.sort_values('CLAVESXPREDIO', ascending=False, inplace=True)
+        # test_igecem=test_igecem.loc[test_igecem['CLAVESXPREDIO']>1]
         
 
         return(test_igecem)

@@ -195,7 +195,7 @@ def simulacion_poli(chunks):
         df = chunks.loc[chunks['CVEGEO'].str.contains(cve)]
         
         assert any(df['ESTIMADO']>0)
-        df = prep.prep.combinar_manzanas(df, llave='CVEGEO')
+        df = combinar_manzanas(df, llave='CVEGEO')
         
         df.reset_index(inplace=True)
         df.drop_duplicates('CVEGEO', inplace=True)
@@ -205,12 +205,12 @@ def simulacion_poli(chunks):
         m1.crs= 'epsg:3006'
         m2 = gpd.GeoDataFrame(m2).set_geometry(0)
         m2.crs= 'epsg:3006'
-        m1['INTFIS_RS_FD_LON_1']=m1[0].x
-        m1['INTFIS_RS_FD_LAT_1']=m1[0].y
-        m2['INTFIS_RS_FD_LON_1']=m2[0].x
-        m2['INTFIS_RS_FD_LAT_1']=m2[0].y
-        m1.sort_values(['INTFIS_RS_FD_LON_1', 'INTFIS_RS_FD_LAT_1'], inplace=True)
-        m2.sort_values(['INTFIS_RS_FD_LON_1','INTFIS_RS_FD_LAT_1'], inplace=True)
+        m1['LONGITUD_1']=m1[0].x
+        m1['LATITUD_1']=m1[0].y
+        m2['LONGITUD_1']=m2[0].x
+        m2['LATITUD_1']=m2[0].y
+        m1.sort_values(['LONGITUD_1', 'LATITUD_1'], inplace=True)
+        m2.sort_values(['LONGITUD_1','LATITUD_1'], inplace=True)
         try:
             m2 = m2.drop(columns=['geometry'])
         except:
@@ -355,12 +355,12 @@ def task_chunks(chunks):
         m1.crs= 'epsg:3006'
         m2 = gpd.GeoDataFrame(m2).set_geometry(0)
         m2.crs= 'epsg:3006'
-        m1['INTFIS_RS_FD_LON_1']=m1[0].x
-        m1['INTFIS_RS_FD_LAT_1']=m1[0].y
-        m2['INTFIS_RS_FD_LON_1']=m2[0].x
-        m2['INTFIS_RS_FD_LAT_1']=m2[0].y
-        m1.sort_values(['INTFIS_RS_FD_LON_1', 'INTFIS_RS_FD_LAT_1'], inplace=True)
-        m2.sort_values(['INTFIS_RS_FD_LON_1','INTFIS_RS_FD_LAT_1'], inplace=True)
+        m1['LONGITUD']=m1[0].x
+        m1['LATITUD_1']=m1[0].y
+        m2['LONGITUD']=m2[0].x
+        m2['LATITUD_1']=m2[0].y
+        m1.sort_values(['LONGITUD', 'LATITUD_1'], inplace=True)
+        m2.sort_values(['LONGITUD','LATITUD_1'], inplace=True)
         try:
             m2 = m2.drop(columns=['geometry'])
         except:
