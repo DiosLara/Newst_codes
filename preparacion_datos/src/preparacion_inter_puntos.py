@@ -189,7 +189,7 @@ class prep:
     def data_prep_catastro(path_base, path_shp):
         BPCE = pd.read_csv(path_base, encoding='utf-8-sig',
                             header=0, engine='python')
-        BPCE['CVEMZA'] = BPCE['CVEMZA'].astype(str).str.zfill(16)
+        #BPCE['CVEMZA'] = BPCE['CVEMZA'].astype(str).str.zfill(16)
         m_igecem = gpd.read_file(path_shp) ##Lee desde shp
 
         m_igecem = m_igecem.to_crs(4326)
@@ -199,22 +199,22 @@ class prep:
             pass
         # BPCE['CVEMZA'] = BPCE['ESTIMADO'].str[4:12] + '00000000'
 
-        BPCE['CLAVE_PREDIO'] = BPCE['ESTIMADO'].str[0:10].astype(str).str.zfill(16)
+        BPCE['CLAVE_PREDIO'] = BPCE['CLAVE_CATASTRAL'].str[0:10].astype(str).str.zfill(16)
         BPCE.loc[BPCE['CURT'] == ' ', 'CURT'] = float('NaN')
-        # curts = BPCE.loc[BPCE['CURT'].notna()]
-        # curts['LAT_DMS'] = curts['CURT'].str[:11]
-        # curts['LON_DMS'] = curts['CURT'].str[11:]
-        # curts['Latitude'] = curts['LAT_DMS'].astype(str).str[0:2].str.cat(curts['LAT_DMS'].astype(str).str[2:4], '°').str.cat(curts['LAT_DMS'].astype(
-        #     str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''N")
-        # curts['Longitude'] = curts['LON_DMS'].astype(str).str[0:2].str.cat(curts['LON_DMS'].astype(str).str[2:4], '°').str.cat(curts['LON_DMS'].astype(
-        #     str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''W")
+        curts = BPCE.loc[BPCE['CURT'].notna()]
+        curts['LAT_DMS'] = curts['CURT'].str[:11]
+        curts['LON_DMS'] = curts['CURT'].str[11:]
+        curts['Latitude'] = curts['LAT_DMS'].astype(str).str[0:2].str.cat(curts['LAT_DMS'].astype(str).str[2:4], '°').str.cat(curts['LAT_DMS'].astype(
+            str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''N")
+        curts['Longitude'] = curts['LON_DMS'].astype(str).str[0:2].str.cat(curts['LON_DMS'].astype(str).str[2:4], '°').str.cat(curts['LON_DMS'].astype(
+            str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''W")
 
-        # curts_chunks = from_pandas(curts, npartitions=20) ## Se agrego por un bug que tiene clean_lat_long
-        # curts = clean_lat_long(curts_chunks, lat_col="Latitude",
-        #                     long_col="Longitude", split=True)
+        curts_chunks = from_pandas(curts, npartitions=20) ## Se agrego por un bug que tiene clean_lat_long
+        curts = clean_lat_long(curts_chunks, lat_col="Latitude",
+                            long_col="Longitude", split=True)
 
-        # BPCE = BPCE.loc[BPCE['CURT'].isna()]
-        # BPCE = pd.concat([BPCE.loc[BPCE['CURT'].isna()], curts], axis=0)
+        BPCE = BPCE.loc[BPCE['CURT'].isna()]
+        BPCE = pd.concat([BPCE.loc[BPCE['CURT'].isna()], curts], axis=0)
         predios = BPCE.drop_duplicates('CLAVE_PREDIO')
         
         m_igecem['CLAVE_PREDIO']= m_igecem['CLAVECATASTRAL'].astype(str).str.zfill(16)
