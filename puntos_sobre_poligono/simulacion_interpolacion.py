@@ -8,7 +8,7 @@ from tqdm import tqdm
 import shapely
 import concurrent.futures
 import os
-# from preparacion_datos.src.preparacion_inter_puntos import prep
+from preparacion_datos.src.preparacion_inter_puntos import data_prep_catastro
 '''Interpolación de puntos'''
 def _to_2d(x, y, z):
     return tuple(filter(None, [x, y]))
@@ -44,7 +44,7 @@ def points_bounds(df, simplify=True):
         n = gpd.GeoSeries(geom.convex_hull.boundary)
     else:
         n = gpd.GeoSeries(geom.boundary)
-    n = n.to_crs('epsg:3006')
+    n = n.to_crs('epsg:3857')
     distance_delta = int(n.geometry.length.unique())/(int(df.ESTIMADO))
     
     distances = np.arange(0, n.geometry.length.unique(), float(distance_delta))
@@ -64,7 +64,7 @@ def points_polis(df):
         distance_delta ==> genera puntos dentro del poligono 
     """
     df.sort_values('ESTIMADO', ascending=False, inplace=True)
-    df = df.to_crs('epsg:3006')
+    df = df.to_crs('epsg:3857')
     
     # df['ESTIMADO']=df['ESTIMADO'].astype(int)
     ndb2= gpd.GeoDataFrame(columns={0})
@@ -88,8 +88,8 @@ def points_polis(df):
                 ndb2 =pd.concat([ndb2 , ndb0], axis=0)
                 ndb =pd.concat([ndb , ndb00], axis=0)
                 
-            ndb.crs='epsg:3006'
-            ndb2.crs='epsg:3006'
+            ndb.crs='epsg:3857'
+            ndb2.crs='epsg:3857'
            
             # print(gpd.sjoin(gpd.GeoDataFrame(df).set_geometry('geometry'), gpd.GeoDataFrame(
             #     ndb2).set_geometry(0)).dropna(how='all'))
@@ -113,8 +113,8 @@ def points_polis(df):
                     float(distance_delta)*2*i).bounds['minx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['miny']))
                 ndb2 =pd.concat([ndb2 , ndb0], axis=0)
                 ndb =pd.concat([ndb , ndb00], axis=0)
-            ndb.crs='epsg:3006'
-            ndb2.crs='epsg:3006'
+            ndb.crs='epsg:3857'
+            ndb2.crs='epsg:3857'
             m2 = gpd.sjoin(gpd.GeoDataFrame(df).set_geometry('geometry'), gpd.GeoDataFrame(
                 ndb2).set_geometry(0), how='right', predicate='intersects').dropna(how='all')
 
@@ -132,8 +132,8 @@ def points_polis(df):
                     float(distance_delta)*1.09*i).bounds['minx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['miny']))
                 ndb2 =pd.concat([ndb2 , ndb0], axis=0)
                 ndb =pd.concat([ndb , ndb00], axis=0)
-            ndb.crs='epsg:3006'
-            ndb2.crs='epsg:3006'
+            ndb.crs='epsg:3857'
+            ndb2.crs='epsg:3857'
 
             m2 = gpd.sjoin(gpd.GeoDataFrame(df).set_geometry('geometry'), gpd.GeoDataFrame(
                 ndb2).set_geometry(0), how='right', predicate='intersects').dropna(how='all')
@@ -154,8 +154,8 @@ def points_polis(df):
                 float(distance_delta)*1.4*i).bounds['minx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['miny']))
                 ndb2 =pd.concat([ndb2 , ndb0], axis=0)
                 ndb =pd.concat([ndb , ndb00], axis=0)
-            ndb.crs='epsg:3006'
-            ndb2.crs='epsg:3006'
+            ndb.crs='epsg:3857'
+            ndb2.crs='epsg:3857'
             m2 = gpd.sjoin(gpd.GeoDataFrame(df).set_geometry('geometry'), gpd.GeoDataFrame(
                 ndb2).set_geometry(0), how='right', predicate='intersects').dropna(how='all')
 
@@ -190,21 +190,21 @@ def simulacion_poli(chunks):
     '''Ciclo a partir de la cve cat nivel predio y aplica las funciones arriba,
      una vez aplicada la que genera los puntos sobre el polígono,
       convierte de nuevo m1 y m2 a geometría y genera las coordenadas en columnas separadas'''
-    df_final = pd.DataFrame(columns=['index_left', 0, 'CVEGEO'])
-    for i ,cve in tqdm(enumerate(chunks['CVEGEO']),total = len(chunks)):
-        df = chunks.loc[chunks['CVEGEO'].str.contains(cve)]
+    df_final = pd.DataFrame(columns=['index_left', 0, 'CLAVE_PREDIO'])
+    for i ,cve in tqdm(enumerate(chunks['CLAVE_PREDIO']),total = len(chunks)):
+        df = chunks.loc[chunks['CLAVE_PREDIO'].str.contains(cve)]
         
         assert any(df['ESTIMADO']>0)
-        df = combinar_manzanas(df, llave='CVEGEO')
+        df = combinar_manzanas(df, llave='CLAVE_PREDIO')
         
         df.reset_index(inplace=True)
-        df.drop_duplicates('CVEGEO', inplace=True)
+        df.drop_duplicates('CLAVE_PREDIO', inplace=True)
         m2, m1 = points_polis(df)
         
         m1 = gpd.GeoDataFrame(m1).set_geometry(0)
-        m1.crs= 'epsg:3006'
+        m1.crs= 'epsg:3857'
         m2 = gpd.GeoDataFrame(m2).set_geometry(0)
-        m2.crs= 'epsg:3006'
+        m2.crs= 'epsg:3857'
         m1['LONGITUD_1']=m1[0].x
         m1['LATITUD_1']=m1[0].y
         m2['LONGITUD_1']=m2[0].x
@@ -237,7 +237,7 @@ def simulacion_poli(chunks):
         m1.reset_index(drop=True, inplace=True)
         m2.reset_index(drop=True, inplace=True)
         
-        tot= gpd.GeoDataFrame(pd.concat([m1, m2], axis=0), crs= 'epsg:3006',geometry='geometry')
+        tot= gpd.GeoDataFrame(pd.concat([m1, m2], axis=0), crs= 'epsg:3857',geometry='geometry')
    
         '''Distancias mínimas con respecto a la misma base para eliminar aquellos cercanos
         Si el polígono es muy pequeño,se deja un rango persivio 
@@ -271,10 +271,10 @@ def task_interpolation(n4_n):
     bd_f = pd.DataFrame(columns=n4_n.columns)
     bd_f[0] = float('NaN')
 
-    for i, ids in tqdm(enumerate(n4_n['CVEGEO'].dropna().unique()),total = len(n4_n)):
-        n = n4_n.loc[n4_n['CVEGEO'] == ids].reset_index(drop=True)
+    for i, ids in tqdm(enumerate(n4_n['CLAVE_PREDIO'].dropna().unique()),total = len(n4_n)):
+        n = n4_n.loc[n4_n['CLAVE_PREDIO'] == ids].reset_index(drop=True)
         
-        n=n.to_crs(3006)
+        n=n.to_crs(3857)
 
         # n=pd.DataFrame(n[:1])
         try:
@@ -291,18 +291,18 @@ def task_interpolation(n4_n):
         #     distance) for distance in distances] + [n.geometry[n.geometry.index[0]].boundary])
         points=MultiPoint([n.geometry[n.geometry.index[0]].boundary.interpolate(distance) for distance in distances]+ [n.geometry[n.geometry.index[0]].centroid])
         list_points = gpd.GeoSeries(points).explode(index_parts=True)
-        list_points.crs = 'EPSG:3006'#4326'#6362
+        list_points.crs = 'EPSG:3857'#4326'#6362
         list_points = list_points.to_crs("EPSG:4326")
-        bd = pd.concat([n4_n.loc[n4_n['CVEGEO'] == ids].reset_index(
+        bd = pd.concat([n4_n.loc[n4_n['CLAVE_PREDIO'] == ids].reset_index(
             drop=True), list_points.reset_index(drop=True)], axis=1)
         bd_f = pd.concat([bd_f, bd], axis=0,ignore_index=True)
     # '''Un ciclo para generar un conjunto de puntos relacionados a la base y al id interpolados sobre el Linestring'''
     # bd_f = pd.DataFrame(columns=n4_n.columns)
     # bd_f[0] = float('NaN')
 
-    # for i, ids in tqdm(enumerate(n4_n['CVEGEO'].unique()),total = len(n4_n)):
-    #     n = n4_n.loc[n4_n['CVEGEO'] == ids].reset_index(drop=True)
-    #     n=n.to_crs(3006)
+    # for i, ids in tqdm(enumerate(n4_n['CLAVE_PREDIO'].unique()),total = len(n4_n)):
+    #     n = n4_n.loc[n4_n['CLAVE_PREDIO'] == ids].reset_index(drop=True)
+    #     n=n.to_crs(3857)
     #     try:
     #         n["geometry"] = [shapely.ops.transform(_to_2d, x) for x in n["geometry"]]
     #     except:
@@ -330,9 +330,9 @@ def task_interpolation(n4_n):
     #         distance) for distance in distances] + [n.geometry[n.geometry.index[0]].boundary[1]])
 
     #     list_points = gpd.GeoSeries(points).explode(index_parts=True)
-    #     list_points.crs = 'EPSG:3006'#4326'#6362
+    #     list_points.crs = 'EPSG:3857'#4326'#6362
     #     list_points = list_points.to_crs("EPSG:4326")
-    #     bd = pd.concat([n4_n.loc[n4_n['CVEGEO'] == ids].reset_index(
+    #     bd = pd.concat([n4_n.loc[n4_n['CLAVE_PREDIO'] == ids].reset_index(
     #         drop=True), list_points.reset_index(drop=True)], axis=1)
     #     bd_f = pd.concat([bd_f, bd], axis=0)
 
@@ -341,20 +341,21 @@ def task_interpolation(n4_n):
     return(bd_f)
 
 def task_chunks(chunks):    
-    df_final = pd.DataFrame(columns={'index_left', 0, 'CVEGEO'})
-    for i ,cve in tqdm(enumerate(chunks['CVEGEO']),total = len(chunks)):
-        df = chunks.loc[chunks['CVEGEO'].str.contains(cve)]
+    df_final = pd.DataFrame(columns=['index_left', 0, 'CLAVE_PREDIO'])
+    print(chunks)
+    for i ,cve in tqdm(enumerate(chunks['id_cat']),total = len(chunks)):
+        df = chunks.loc[chunks['id_cat'].str.contains(cve)]
         
         assert any(df['ESTIMADO']>=1)
-        df = combinar_manzanas(df, llave='CVEGEO')
+        df = combinar_manzanas(df, llave='CLAVE_PREDIO')
         df.reset_index(inplace=True)
-        df.drop_duplicates('CVEGEO', inplace=True)
+        df.drop_duplicates('CLAVE_PREDIO', inplace=True)
         m2, m1 = points_polis(df)
         
         m1 = gpd.GeoDataFrame(m1).set_geometry(0)
-        m1.crs= 'epsg:3006'
+        m1.crs= 'epsg:3857'
         m2 = gpd.GeoDataFrame(m2).set_geometry(0)
-        m2.crs= 'epsg:3006'
+        m2.crs= 'epsg:3857'
         m1['LONGITUD']=m1[0].x
         m1['LATITUD_1']=m1[0].y
         m2['LONGITUD']=m2[0].x
@@ -386,7 +387,7 @@ def task_chunks(chunks):
         m1.reset_index(drop=True, inplace=True)
         m2.reset_index(drop=True, inplace=True)
         
-        tot= gpd.GeoDataFrame(pd.concat([m1, m2], axis=0), crs= 'epsg:3006',geometry='geometry')
+        tot= gpd.GeoDataFrame(pd.concat([m1, m2], axis=0), crs= 'epsg:3857',geometry='geometry')
    
         tot.reset_index(drop=True, inplace=True)
         tot['ORDEN'] = tot.index +1
@@ -420,6 +421,7 @@ def post_points_catastro(path_base, path_shp, funcion):
     """
     if path_base is True:
         test_igecem = data_prep_catastro(path_base, path_shp)
+        print('test igecem es: ',test_igecem)
     else:
         m_igecem = gpd.read_file(path_shp) ##Lee desde shp
 
@@ -428,8 +430,8 @@ def post_points_catastro(path_base, path_shp, funcion):
             m_igecem = m_igecem.loc[~m_igecem['manz'].astype(str).str.endswith('000')]
         except: 
             test_igecem= m_igecem
-    test_igecem_chunks =  np.array_split(test_igecem, os.cpu_count()) ##Aqui se especifica si se requiere un loc y los chunks
-
+    test_igecem_chunks =  np.array_split(test_igecem, os.cpu_count()-1) ##Aqui se especifica si se requiere un loc y los chunks
+    
     df_concat = pd.DataFrame()
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
