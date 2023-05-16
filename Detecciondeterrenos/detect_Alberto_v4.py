@@ -237,7 +237,10 @@ def map_d(x, in_min, in_max, out_min, out_max):
     """Genera una interpolacion para pasar de un rango a otro"""
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
-def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_terreno,clase_terreno,raster,ancho,alto,dim,minx,maxx,miny,maxy,shape,angulo_get=0,opt_conf_thres=0.05,imshow=False,imsave=False,path=""):
+def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,
+                terreno,conf_terreno,clase_terreno,raster,ancho,alto,
+                dim,minx,maxx,miny,maxy,shape,angulo_get=0,opt_conf_thres=0.05,
+                imshow=False,imsave=False,path="",clasificar:bool=True):
     with rasterio.open(raster) as src:
         with tqdm.tqdm(total=alto*ancho) as pbar:
             for j in range(ancho):#ancho
@@ -282,6 +285,7 @@ def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_ter
                         with torch.no_grad():
                             vector=Modelo.detect(opt_source="cache1.png",opt_conf_thres=opt_conf_thres,imagen_s=image_ro)
                         proyecciones=shapes[0].get('coordinates')[0][:-1]
+                        # Vector de deteccion de yolov
                         df_cache=vector2xy(vector,w,h,dim=dim,nameimg=nameimg)
                         for cs_1 in (range(len(df_cache))):
     #                         x1,y1=df_cache.loc[cs_1,'start_point_im']
@@ -297,7 +301,10 @@ def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,terreno,conf_ter
                             x2,y2=df_cache.loc[cs_1,'end_point_im']
                             df_aux=image_ro.copy()
                             df_aux=df_aux[y1:y2,x1:x2]
-                            clase,imagen=model_class.predict_image(df_aux)
+                            if clasificar:
+                                clase,imagen=model_class.predict_image(df_aux)
+                            else:
+                                clase = 'No_Aplica'
                             if df_cache['Tipo'][cs_1]=='casa':
                                 if np.sum(df_aux)>500:
                                     casas.append(rotacion_detect(df_cache.loc[cs_1,'start_point_100'], df_cache.loc[cs_1,'end_point_100'],-angulo,proyecciones,w,h,dim))
@@ -418,43 +425,44 @@ class alexnet():
         self.model=alexnet
         self.idx_to_class=idx_to_class
     
-    def predict_file(self,file,pad=True):
-        """Genera prediccion sobre archivo"""
-        x = Image.open(file)
-        x = np.asarray(x)
-        x=np.stack([x[:,:,0],x[:,:,1],x[:,:,2]], axis=-1)
-        if pad:
-            x=padding(x)
-        x=cv2.resize(x,(224,224))
-        x=x.astype("float32")
-        x=x/255*2-1
-        x=np.moveaxis(x,-1,0)
-        x = np.expand_dims(x, axis=0)
-        with torch.no_grad():
-            img = torch.from_numpy(x).to(self.device)
-            res=list(self.model(img).cpu().detach().numpy()[0])
-            indice=res.index(max(res))
-            clase=self.idx_to_class.get(indice)
-        return clase 
-    
-    def predict_image(self,image,pad=True):
-        """Generar predeccion de clase sobre imagen precargada"""
-        x = np.asarray(image)
-        x=np.stack([x[:,:,0],x[:,:,1],x[:,:,2]], axis=-1)
-        if pad:
-            x=padding(x)
-        imagen=x.copy()
-        x=cv2.resize(x,(224,224))
-        x=x.astype("float32")
-        x=x/255*2-1
-        x=np.moveaxis(x,-1,0)
-        x = np.expand_dims(x, axis=0)
-        with torch.no_grad():
-            img = torch.from_numpy(x).to(self.device)
-            res=list(self.model(img).cpu().detach().numpy()[0])
-            indice=res.index(max(res))
-            clase=self.idx_to_class.get(indice)
-        return clase, imagen 
+def predict_file(self,file,pad=True):
+    """Genera prediccion sobre archivo"""
+    # x = Image.open(file)
+    # x = np.asarray(x)
+    # x=np.stack([x[:,:,0],x[:,:,1],x[:,:,2]], axis=-1)
+    x=cv2.imread(file)
+    if pad:
+        x=padding(x)
+    x=cv2.resize(x,(224,224))
+    x=x.astype("float32")
+    x=x/255*2-1
+    x=np.moveaxis(x,-1,0)
+    x = np.expand_dims(x, axis=0)
+    with torch.no_grad():
+        img = torch.from_numpy(x).to(self.device)
+        res=list(self.model(img).cpu().detach().numpy()[0])
+        indice=res.index(max(res))
+        clase=self.idx_to_class.get(indice)
+    return clase 
+
+def predict_image(self,image,pad=True):
+    """Generar predeccion de clase sobre imagen precargada"""
+    x = np.array(image)
+    # x=np.stack([x[:,:,0],x[:,:,1],x[:,:,2]], axis=-1)
+    if pad:
+        x=padding(x)
+    imagen=x.copy()
+    x=cv2.resize(x,(224,224))
+    x=x.astype("float32")
+    x=x/255*2-1
+    x=np.moveaxis(x,-1,0)
+    x = np.expand_dims(x, axis=0)
+    with torch.no_grad():
+        img = torch.from_numpy(x).to(self.device)
+        res=list(self.model(img).cpu().detach().numpy()[0])
+        indice=res.index(max(res))
+        clase=self.idx_to_class.get(indice)
+    return clase, imagen
     
 def padding(img):
     """Escala la imagen y completa el sobrante con franjas negras, para no perder proporciones"""                
