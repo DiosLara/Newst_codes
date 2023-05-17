@@ -1,14 +1,15 @@
 import geopandas as gpd
 import pandas as pd
-from Geolocalizacion.separacion_domicilios.funciones_diccionarios import *
+#from Geolocalizacion.separacion_domicilios.funciones_diccionarios import *
 
-from Geolocalizacion.separacion_domicilios.funciones_diccionarios import procesamiento_con_diccionarios 
+#from Geolocalizacion.separacion_domicilios.funciones_diccionarios import procesamiento_con_diccionarios 
 from tqdm import tqdm
 import concurrent.futures
-from OracleIntfis.db_connection import OracleDB
+#from OracleIntfis.db_connection import OracleDB
 import os
 from scipy.spatial import cKDTree
 from shapely.geometry import Point
+from dataprep.clean import clean_lat_long
 
 '''Integración de todos los elementos necesarios para el prep de bases geo y con clave catastral'''
 
@@ -187,19 +188,22 @@ class prep:
         return base
 
     def data_prep_catastro(path_base, path_shp):
-        BPCE = pd.read_csv(path_base, encoding='utf-8-sig',
-                            header=0, engine='python')
+        BPCE = pd.read_excel(path_base).head(1000)
+        # BPCE = pd.read_csv(path_base, encoding='utf-8-sig',
+        #                     header=0, engine='python')
         #BPCE['CVEMZA'] = BPCE['CVEMZA'].astype(str).str.zfill(16)
-        m_igecem = gpd.read_file(path_shp) ##Lee desde shp
-
-        m_igecem = m_igecem.to_crs(4326)
-        try:
-            m_igecem = m_igecem.loc[~m_igecem['manz'].astype(str).str.endswith('000')]
-        except: 
-            pass
+        m_igecem = gpd.read_file(path_shp).head(1000) ##Lee desde shp
+        print(m_igecem.columns)
+        #m_igecem = m_igecem.to_crs(4326)
+        
+        # try:
+        #     m_igecem = m_igecem.loc[~m_igecem['manz'].astype(str).str.endswith('000')]
+        # except: 
+        #     pass
         # BPCE['CVEMZA'] = BPCE['ESTIMADO'].str[4:12] + '00000000'
-
-        BPCE['CLAVE_PREDIO'] = BPCE['CLAVE_CATASTRAL'].str[0:10].astype(str).str.zfill(16)
+        m_igecem.rename(columns={'CLAVECATAS':'CLAVECATASTRAL'}, inplace=True)
+        m_igecem['CLAVECATASTRAL']=m_igecem['CLAVECATASTRAL'].astype(str)
+        BPCE['CLAVE_PREDIO'] = str(BPCE['CLAVE_PREDIO']) + '000000'
         BPCE.loc[BPCE['CURT'] == ' ', 'CURT'] = float('NaN')
         curts = BPCE.loc[BPCE['CURT'].notna()]
         curts['LAT_DMS'] = curts['CURT'].str[:11]
@@ -208,18 +212,17 @@ class prep:
             str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''N")
         curts['Longitude'] = curts['LON_DMS'].astype(str).str[0:2].str.cat(curts['LON_DMS'].astype(str).str[2:4], '°').str.cat(curts['LON_DMS'].astype(
             str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''W")
-
-        curts_chunks = from_pandas(curts, npartitions=20) ## Se agrego por un bug que tiene clean_lat_long
-        curts = clean_lat_long(curts_chunks, lat_col="Latitude",
-                            long_col="Longitude", split=True)
-
+        #curts_chunks = from_pandas(curts, npartitions=20) ## Se agrego por un bug que tiene clean_lat_long
+        curts = clean_lat_long(curts, lat_col="Latitude",
+                             long_col="Longitude", split=True)
         BPCE = BPCE.loc[BPCE['CURT'].isna()]
         BPCE = pd.concat([BPCE.loc[BPCE['CURT'].isna()], curts], axis=0)
         predios = BPCE.drop_duplicates('CLAVE_PREDIO')
-        
-        m_igecem['CLAVE_PREDIO']= m_igecem['CLAVECATASTRAL'].astype(str).str.zfill(16)
+        print('Esto es clave cat: ',m_igecem['CLAVECATASTRAL'])
+        m_igecem['CLAVE_PREDIO']= m_igecem['CLAVECATASTRAL'].str.slice(0,9).str.zfill(10) + '000000'
         test_igecem = m_igecem.merge(BPCE.groupby('CLAVE_PREDIO').count().reset_index()[
             ['ESTIMADO', 'CURT', 'CLAVE_PREDIO']],on='CLAVE_PREDIO')
+        #print(BPCE.CLAVE_PREDIO)    
         # # predios=predios.loc[(predios['CATASTRO_DOMICILIO_INMUEBLE_CONSTRUIDO'].astype(str).str.replace('S/N','NaN').str.split('NUMERO INTERIOR').str[1]!='NaN') & (predios['CATASTRO_DOMICILIO_INMUEBLE_CONSTRUIDO'].astype(str).str.replace('S/N','NaN').str.split('NUMERO INTERIOR').str[1].notna())]
         # test_igecem= m_igecem
         test_igecem.rename(
