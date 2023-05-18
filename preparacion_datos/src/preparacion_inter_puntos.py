@@ -188,12 +188,12 @@ class prep:
         return base
 
     def data_prep_catastro(path_base, path_shp):
-        BPCE = pd.read_excel(path_base).head(1000)
+        BPCE = pd.read_excel(path_base)
         # BPCE = pd.read_csv(path_base, encoding='utf-8-sig',
         #                     header=0, engine='python')
         #BPCE['CVEMZA'] = BPCE['CVEMZA'].astype(str).str.zfill(16)
-        m_igecem = gpd.read_file(path_shp).head(1000) ##Lee desde shp
-        print(m_igecem.columns)
+        m_igecem = gpd.read_file(path_shp) ##Lee desde shp
+        #print(m_igecem.columns)
         #m_igecem = m_igecem.to_crs(4326)
         
         # try:
@@ -203,7 +203,7 @@ class prep:
         # BPCE['CVEMZA'] = BPCE['ESTIMADO'].str[4:12] + '00000000'
         m_igecem.rename(columns={'CLAVECATAS':'CLAVECATASTRAL'}, inplace=True)
         m_igecem['CLAVECATASTRAL']=m_igecem['CLAVECATASTRAL'].astype(str)
-        BPCE['CLAVE_PREDIO'] = str(BPCE['CLAVE_PREDIO']) + '000000'
+        BPCE['CLAVE_PREDIO'] = BPCE['CLAVE_PREDIO'].astype(str).str.replace("\n1","",regex=False).str.replace("\n4","",regex=False).str.zfill(16)
         BPCE.loc[BPCE['CURT'] == ' ', 'CURT'] = float('NaN')
         curts = BPCE.loc[BPCE['CURT'].notna()]
         curts['LAT_DMS'] = curts['CURT'].str[:11]
@@ -218,20 +218,21 @@ class prep:
         BPCE = BPCE.loc[BPCE['CURT'].isna()]
         BPCE = pd.concat([BPCE.loc[BPCE['CURT'].isna()], curts], axis=0)
         predios = BPCE.drop_duplicates('CLAVE_PREDIO')
-        print('Esto es clave cat: ',m_igecem['CLAVECATASTRAL'])
-        m_igecem['CLAVE_PREDIO']= m_igecem['CLAVECATASTRAL'].str.slice(0,9).str.zfill(10) + '000000'
+        print('Esto es clave cat: ',BPCE['CLAVE_PREDIO'])
+        m_igecem['CLAVE_PREDIO']= m_igecem['CLAVECATASTRAL'].str[0:10] + '000000'
+       # print(m_igecem['CLAVE_PREDIO'])
         test_igecem = m_igecem.merge(BPCE.groupby('CLAVE_PREDIO').count().reset_index()[
             ['ESTIMADO', 'CURT', 'CLAVE_PREDIO']],on='CLAVE_PREDIO')
         #print(BPCE.CLAVE_PREDIO)    
         # # predios=predios.loc[(predios['CATASTRO_DOMICILIO_INMUEBLE_CONSTRUIDO'].astype(str).str.replace('S/N','NaN').str.split('NUMERO INTERIOR').str[1]!='NaN') & (predios['CATASTRO_DOMICILIO_INMUEBLE_CONSTRUIDO'].astype(str).str.replace('S/N','NaN').str.split('NUMERO INTERIOR').str[1].notna())]
         # test_igecem= m_igecem
-        test_igecem.rename(
-            columns={'ESTIMADO': 'CLAVESXPREDIO'}, inplace=True)
-        test_igecem.sort_values('CLAVESXPREDIO', ascending=False, inplace=True)
+        # test_igecem.rename(
+        #     columns={'ESTIMADO': 'CLAVESXPREDIO'}, inplace=True)
+        test_igecem.sort_values('ESTIMADO', ascending=False, inplace=True)
         # test_igecem=test_igecem.loc[test_igecem['CLAVESXPREDIO']>1]
         
 
-        return(test_igecem)
+        return(test_igecem.tail(5000))
     
 
 
