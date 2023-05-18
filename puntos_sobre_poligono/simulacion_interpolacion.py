@@ -9,7 +9,7 @@ import shapely
 import concurrent.futures
 import os
 import sys
-sys.path.append(r'C:\Users\mfpen\OneDrive\Documentos\Repositorios\geoloc2\preparacion_datos\src')
+sys.path.append(r'C:\Users\dlara\Proyectos_git\geoloc2\preparacion_datos\src')
 from preparacion_inter_puntos import prep
 '''Interpolación de puntos'''
 def _to_2d(x, y, z):
@@ -344,12 +344,19 @@ def task_interpolation(n4_n):
 
 def task_chunks(chunks):    
     df_final = pd.DataFrame(columns=['index_left', 0, 'CLAVE_PREDIO'])
-    print(chunks)
+    # print(chunks)
+ 
+    # print(chunks['CLAVE_PREDIO'])
     for i ,cve in tqdm(enumerate(chunks['CLAVE_PREDIO']),total = len(chunks)):
-        df = chunks.loc[chunks['CLAVE_PREDIO'].str.contains(cve)]
+        print(cve)
+        df = chunks.loc[chunks['CLAVE_PREDIO'].astype(str).str.contains(str(cve))]
         
         assert any(df['ESTIMADO']>=1)
-        df = combinar_manzanas(df, llave='CLAVE_PREDIO')
+        try:
+            df = combinar_manzanas(df, llave='CLAVE_PREDIO')
+        except:
+            df= prep.transform_df_to_gpd(df, lon_col = 'LONGITUD',
+                    lat_col= 'LATITUD', crs= 'EPSG:4326')
         df.reset_index(inplace=True)
         df.drop_duplicates('CLAVE_PREDIO', inplace=True)
         m2, m1 = points_polis(df)
@@ -358,12 +365,12 @@ def task_chunks(chunks):
         m1.crs= 'epsg:3857'
         m2 = gpd.GeoDataFrame(m2).set_geometry(0)
         m2.crs= 'epsg:3857'
-        m1['LONGITUD']=m1[0].x
+        m1['LONGITUD_1']=m1[0].x
         m1['LATITUD_1']=m1[0].y
-        m2['LONGITUD']=m2[0].x
+        m2['LONGITUD_1']=m2[0].x
         m2['LATITUD_1']=m2[0].y
-        m1.sort_values(['LONGITUD', 'LATITUD_1'], inplace=True)
-        m2.sort_values(['LONGITUD','LATITUD_1'], inplace=True)
+        m1.sort_values(['LONGITUD_1', 'LATITUD_1'], inplace=True)
+        m2.sort_values(['LONGITUD_1','LATITUD_1'], inplace=True)
         try:
             m2 = m2.drop(columns=['geometry'])
         except:
@@ -448,6 +455,6 @@ if __name__ == "__main__":
 
     df_final_catastro = post_points_catastro(PATH_BASE, PATH_SHP, task_chunks)
 
-    print(df_final_catastro)    
+    # print(df_final_catastro)    
 
     df_final_catastro.to_csv(r'C:\Users\dlara/Matamoros_puntos.csv', encoding='utf-8-sig')
