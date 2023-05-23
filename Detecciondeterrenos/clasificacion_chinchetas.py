@@ -187,9 +187,7 @@ def detectar_clase(imagen:str,dict_plantillas, resize=(224,224),return_list=Fals
     elif result == 0 and return_list==False: return 0
     else:
         return list_clases
-<<<<<<< HEAD
    
-=======
 
 def clasificacion_iter_size(img,dict_gris,n=200,salto=10,umbral=0.85,use_cluster:bool=True):
     '''
@@ -256,7 +254,6 @@ def iter_umbral_fn (img:np.array,dict_gris:dict, n:int=100,salto_n:int=10,
         umbral -= salto_umbral
         if umbral == min_umbral: break
     return clase, n_1 , umbral
->>>>>>> ff533c9 (update)
 
 def move_fotos_from_folder(ruta_plantillas,ruta_fotos,ruta_root,
                            create_folder=False,
