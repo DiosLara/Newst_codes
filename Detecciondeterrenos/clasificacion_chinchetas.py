@@ -142,7 +142,7 @@ def get_dict_plantilla_gris(ruta_plantillas,want_resize=True,resize=(220,220),k=
         img = cv2.imread(template)
         if want_resize:
             img = cv2.resize(img,resize)
-        res2, ret, label, center = clusterizar_color(img,k=k,want_resize=True, resize=(240,240))
+        res2, ret, label, center = clusterizar_color(img,k=k,want_resize=True, resize=resize)
         dic_plantillas[name_planilla] = {'ruta':template, 
                                          'plantilla_gris':plantilla_gris,
                                          'imagen':img,
@@ -153,7 +153,9 @@ def get_dict_plantilla_gris(ruta_plantillas,want_resize=True,resize=(220,220),k=
 
 # Cargar la imagen y la plantilla
 
-def detectar_clase(imagen:str,dict_plantillas, resize=(224,224),return_list=False,umbral:float=0.8):
+def detectar_clase(imagen:str,dict_plantillas:dict, 
+                   resize:tuple=(224,224),return_list:bool=False,
+                   umbral:float=0.8,use_cluster:bool=True):
     '''
     (Function)
         Esta funcion recibe una imagen y retorna la clase a la que pertenece segun el diccionario
@@ -171,8 +173,11 @@ def detectar_clase(imagen:str,dict_plantillas, resize=(224,224),return_list=Fals
     list_clases = []
     result = False
     for key in dict_plantillas.keys():
-        # print(key)
-        plantilla_gris = dict_plantillas[key]['plantilla_gris']
+        if use_cluster:
+            # Como el cluster es imagen real 
+            plantilla_gris = cv2.cvtColor(dict_plantillas[key]['imagen_clus'], cv2.COLOR_BGR2GRAY)
+        else:
+            plantilla_gris = dict_plantillas[key]['plantilla_gris']
         result = comparacion_imagen(img, plantilla_gris, want_resize=True, resize=resize,umbral=umbral)
 
         if result:
@@ -184,12 +189,75 @@ def detectar_clase(imagen:str,dict_plantillas, resize=(224,224),return_list=Fals
     elif result == 0 and return_list==False: return 0
     else:
         return list_clases
-   
+
+def clasificacion_iter_size(img,dict_gris,n=200,salto=10,umbral=0.85,use_cluster:bool=True):
+    '''
+    (Function)
+        Esta funcion esta diseñada para usarla de manera mas general, ya que mueve el resize
+        debido a la variabilidad de pixelaje de la plantilla original con las distintas que se 
+        pueden sucitar en los raters.
+        Se recomienda usar n=200 y el de la plantilla resize=(30,30)
+        de igual manera hacer pruebas seria bueno, ya que si hay una diferencia muy grande entre n
+        y resize[0], puede dar malas clasificaciones
+    (Parameters)
+        - img: [str|np.aray] imagen que se desea clasificar
+        - dict_gris: [dict] diccionario que se extrae
+        - n: [int] tamaño de resize inicial considerelo en relacion con el resize del
+        dict_gris
+        - salto: [int|float] Tamaño de salto de descenso, si lo deja en 10 puede funcionar bien
+        pero en general entre mas pequeño mas tardado
+        - umbral: [float] porcentaje de aceptacion
+    (Authors)
+        - Hector Limon
+    '''
+    clase = 0
+    while True:
+        if n == 0:
+            break
+        clase =  detectar_clase(img,dict_gris,(n,n),False,umbral,use_cluster)
+        n -= salto
+        if clase != 0:
+            # Detecto una clase, revisamos colores para los mas confusos
+            #if clase == 'establecimiento_google':
+                
+            break
+    
+    return clase, n
+
+def iter_umbral_fn (img:np.array,dict_gris:dict, n:int=100,salto_n:int=10,
+                    umbral:float=0.95,salto_umbral:float=0.02,min_umbral:float=0.5,
+                    use_cluster:bool=False):
+    '''
+    (Function)
+        Esta funcion retoma la funcion clasificacion_iter_size agregando la iteracion sobre el umbral, debido a que 
+        no siempre se puede tener un umbral especifico, podemos jugar con el para tener un clasificacion excata, tenga 
+        cuidado de asignar un valor de n, en relacion al resize del dict_gris
+    (Paremeters)
+        - img: [np.array] arreglo matricial de imagen a clasificar
+        - dict_gris: [dict] diccionario de plantillas
+        - n: [int] se considera para el resize donde empezara use 100 si para dict_gris es 30 
+        - salto_n: [int] Tamaño de salto para el nuevo resize (disminuye n de n a n-salto_n) en cada iteracion
+        - umbral: [float] Umbral a usar en un principio, no sea austero.
+        - salto_umbral: En caso de ser necesario bajaremos el umbral de salto_umbral en salto_umbral hasta llegar min_umbral
+        - min_umbral: [float] el umbral minimo significativo, default 0.5, por lo que si llega a 0.5 ya no bajara mas
+        - use_cluster: [bool] Si es True usa imagenes clusterizadas a 2 colores, comete mas errores
+    (Returns)
+        - clase: [str] clase detectada, si es 0, no encontro clase
+        - n_1: [int] resize en el que encontro la clase
+        - umbral: [float] umbral en el que se detecto la clase
+    '''
+    n_1 = 0
+    while n_1 == 0:
+        clase, n_1 = clasificacion_iter_size(img,dict_gris,n=n,salto=salto_n,umbral=umbral,use_cluster=use_cluster)
+        umbral -= salto_umbral
+        if umbral == min_umbral: break
+    return clase, n_1 , umbral
 
 def move_fotos_from_folder(ruta_plantillas,ruta_fotos,ruta_root,
-                           create_folder=False,
-                           listar_clases=False,show_cont=True
-                           ):
+                           create_folder=False,listar_clases=False,
+                           show_cont=True, use_iter_fn=2,
+                           k=30,n=200,salto_n=10,umbral=0.85, salto_umbral=0.02, min_umbral=0.6,
+                           use_cluster=False):
     '''
     (Function)
         Esta funcion selecciona cada foto y segun su clasificacion los mete en una nueva carpeta con
@@ -201,12 +269,15 @@ def move_fotos_from_folder(ruta_plantillas,ruta_fotos,ruta_root,
         - listar_clase: [bool] Puede llegarse a darse el caso que una imagen tenga mas de 1 clase, 
                     si desea ver las diferentes clases, use True, de lo contrario retorna la primera que encuentra
         - show_cont: [bool] True para ver la cantidad de imagenes que ha clasificado
+        - use_iter_fn: [int] 0 para usar la deteccion directa, 1 para usar la funcion de iteracion sobre size
+                     y 2 para usar la funcion de iteracion sobre size con umbral
     (Author)
         Hector Limon
     '''
     
     # obtener diccionario de nombre, ruta a planillas y array de la imagen    
-    dict_plantillas = get_dict_plantilla_gris(ruta_plantillas)
+    dict_plantillas = get_dict_plantilla_gris(ruta_plantillas,True,(k,k))
+    
     # Creamos directorios
     if create_folder:
         for k in dict_plantillas.keys():
@@ -218,15 +289,33 @@ def move_fotos_from_folder(ruta_plantillas,ruta_fotos,ruta_root,
     cont = 0
 
     # Iteramos cada foto para generar clasificacion
-    for foto in tqdm.tqdm(fotos[:]):
+    for foto in tqdm.tqdm(fotos):
         # Nombre de la foto
         name_foto = foto.replace('\\','/').split('/')[-1]
+        
+        # Abrir foto
+        img = cv2.imread(foto)
 
         # Clasificacion de la foto
-        name_class = detectar_clase(foto,dict_plantillas, return_list=listar_clases)
+        if use_iter_fn in [1, '1']:
+            
+            name_class, n1 = clasificacion_iter_size(img,dict_plantillas,
+                                                    n=n,salto=salto_n,
+                                                    umbral=umbral,use_cluster=use_cluster)
+            print(cont,'  ',name_class,'  ', n1, '  ', name_foto)
+            cont += 1
+        elif use_iter_fn in [0, '0']:
+            name_class = detectar_clase(img,dict_plantillas, resize=(n,n),
+                                        return_list=listar_clases,umbral=umbral,use_cluster=use_cluster)
+        elif use_iter_fn in [2,'2']:
+            
+            name_class, n1, umbral = iter_umbral_fn(img,dict_plantillas,n=n,salto_n=salto_n,
+                                                    umbral=umbral,salto_umbral=salto_umbral,min_umbral=min_umbral,
+                                                    use_cluster=use_cluster)
+    
         if listar_clases:
             if len(name_class)>1:
-                img = cv2.imread(foto)
+                
                 cv2_imshow(img)
                 print('Se encontro mas de 1 clase para la foto de arriba, con cual desea quedarse?')
                 print('Seleccione el indice de la lista ',name_class )
@@ -247,7 +336,7 @@ def move_fotos_from_folder(ruta_plantillas,ruta_fotos,ruta_root,
             # Movemos la imagen a la clase correspondiente
             shutil.move(foto, ruta_root+'/'+name_class+'/'+name_class+'_'+name_foto)
             if show_cont: print(cont)
-            cont += 1
+            
             
 
 
