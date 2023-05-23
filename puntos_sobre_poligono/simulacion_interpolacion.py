@@ -69,8 +69,8 @@ def points_polis(df):
     df = df.to_crs('epsg:3857')
     
     # df['ESTIMADO']=df['ESTIMADO'].astype(int)
-    ndb2= gpd.GeoDataFrame(columns={0})
-    ndb= gpd.GeoDataFrame(columns={0})
+    ndb2= gpd.GeoDataFrame(columns=[0])
+    ndb= gpd.GeoDataFrame(columns=[0])
 
     '''Se generan dos bases m1 y m2 para analizar 
     como se reparten los puntos sobre dos direcciones contrarias, y se debe asegurar que tengan la misma longitud'''
@@ -93,8 +93,8 @@ def points_polis(df):
             ndb.crs='epsg:3857'
             ndb2.crs='epsg:3857'
            
-            # print(gpd.sjoin(gpd.GeoDataFrame(df).set_geometry('geometry'), gpd.GeoDataFrame(
-            #     ndb2).set_geometry(0)).dropna(how='all'))
+            print(gpd.sjoin(gpd.GeoDataFrame(df).set_geometry('geometry'), gpd.GeoDataFrame(
+                ndb2).set_geometry(0)).dropna(how='all'))
         
             m2 = gpd.sjoin(gpd.GeoDataFrame(df).set_geometry('geometry'), gpd.GeoDataFrame(
                 ndb2).set_geometry(0), how='right',predicate='intersects').dropna(how='all')
@@ -110,9 +110,9 @@ def points_polis(df):
                 list_points, distance_delta= points_bounds(df, simplify=False )
 
                 ndb0 = gpd.GeoDataFrame(gpd.points_from_xy(gpd.GeoSeries(list_points).buffer(
-                    float(distance_delta)*2*i).bounds['maxx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['maxy']))
+                    float(distance_delta)*2*i).bounds['maxx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['maxy']),geometry=0)
                 ndb00 = gpd.GeoDataFrame(gpd.points_from_xy(gpd.GeoSeries(list_points).buffer(
-                    float(distance_delta)*2*i).bounds['minx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['miny']))
+                    float(distance_delta)*2*i).bounds['minx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['miny']),geometry=0)
                 ndb2 =pd.concat([ndb2 , ndb0], axis=0)
                 ndb =pd.concat([ndb , ndb00], axis=0)
             ndb.crs='epsg:3857'
@@ -129,9 +129,9 @@ def points_polis(df):
                 list_points, distance_delta = points_bounds(df, simplify=False )
                   
                 ndb0 = gpd.GeoDataFrame(gpd.points_from_xy(gpd.GeoSeries(list_points).buffer(
-                    float(distance_delta)*1.09*i).bounds['maxx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['maxy']))
+                    float(distance_delta)*1.09*i).bounds['maxx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['maxy']),geometry=0)
                 ndb00 = gpd.GeoDataFrame(gpd.points_from_xy(gpd.GeoSeries(list_points).buffer(
-                    float(distance_delta)*1.09*i).bounds['minx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['miny']))
+                    float(distance_delta)*1.09*i).bounds['minx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['miny']),geometry=0)
                 ndb2 =pd.concat([ndb2 , ndb0], axis=0)
                 ndb =pd.concat([ndb , ndb00], axis=0)
             ndb.crs='epsg:3857'
@@ -151,9 +151,9 @@ def points_polis(df):
                 list_points, distance_delta = points_bounds(df, simplify=False )
                 
                 ndb0 = gpd.GeoDataFrame(gpd.points_from_xy(gpd.GeoSeries(list_points).buffer(
-                float(distance_delta)*1.4*i).bounds['maxx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['maxy']))
+                float(distance_delta)*1.4*i).bounds['maxx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['maxy']),geometry=0)
                 ndb00 = gpd.GeoDataFrame(gpd.points_from_xy(gpd.GeoSeries(list_points).buffer(
-                float(distance_delta)*1.4*i).bounds['minx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['miny']))
+                float(distance_delta)*1.4*i).bounds['minx'], gpd.GeoSeries(list_points).buffer(float(distance_delta)).bounds['miny']),geometry=0)
                 ndb2 =pd.concat([ndb2 , ndb0], axis=0)
                 ndb =pd.concat([ndb , ndb00], axis=0)
             ndb.crs='epsg:3857'
@@ -345,8 +345,8 @@ def task_interpolation(n4_n):
 def task_chunks(chunks):    
     df_final = pd.DataFrame(columns=['index_left', 0, 'CLAVE_PREDIO'])
     print(chunks)
-    for i ,cve in tqdm(enumerate(chunks['id_cat']),total = len(chunks)):
-        df = chunks.loc[chunks['id_cat'].str.contains(cve)]
+    for i ,cve in tqdm(enumerate(chunks['CLAVE_PREDIO']),total = len(chunks)):
+        df = chunks.loc[chunks['CLAVE_PREDIO'].str.contains(cve)]
         
         assert any(df['ESTIMADO']>=1)
         df = combinar_manzanas(df, llave='CLAVE_PREDIO')
@@ -423,15 +423,15 @@ def post_points_catastro(path_base, path_shp, funcion):
     """
 
     test_igecem = prep.data_prep_catastro(path_base, path_shp)
-    print('test igecem es: ',test_igecem)
+    #print('test igecem es: ',test_igecem)
     # else:
     #     m_igecem = gpd.read_file(path_shp) ##Lee desde shp
 
-    #     m_igecem.crs= 4326 #m_igecem.to_crs(4326)
-    try:
-        m_igecem = m_igecem.loc[~m_igecem['manz'].astype(str).str.endswith('000')]
-    except: 
-        test_igecem = m_igecem
+    # #     m_igecem.crs= 4326 #m_igecem.to_crs(4326)
+    # try:
+    #     m_igecem = m_igecem.loc[~m_igecem['manz'].astype(str).str.endswith('000')]
+    # except: 
+    #    #test_igecem = m_igecem
     test_igecem_chunks =  np.array_split(test_igecem, os.cpu_count()-1) ##Aqui se especifica si se requiere un loc y los chunks
     
     df_concat = pd.DataFrame()
