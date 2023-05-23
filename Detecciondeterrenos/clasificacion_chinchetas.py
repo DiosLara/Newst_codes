@@ -6,6 +6,7 @@ import tqdm
 # from google.colab.patches import cv2_imshow
 import shutil 
 
+# holis
 # from google.colab import drive
 # drive.mount('/content/drive')
 def clusterizar_color(img,k=2,want_resize=True, resize=(240,240)):
@@ -22,6 +23,9 @@ def clusterizar_color(img,k=2,want_resize=True, resize=(240,240)):
         - ret: Es la suma de la distancia al cuadrado desde cada punto a sus centros correspondientes.
         - label: Esta es la matriz de etiquetas  donde cada elemento marcado '0', '1'.....
         - center: Esta es una serie de centros de grupos.
+    (Authors)
+        - Hector limon
+        (Por favor siga enriqueciendo el proceso y escriba su nombre como author)
     '''
     # Reajustar imagen
     if want_resize:
@@ -185,6 +189,72 @@ def detectar_clase(imagen:str,dict_plantillas, resize=(224,224),return_list=Fals
     else:
         return list_clases
    
+
+def clasificacion_iter_size(img,dict_gris,n=200,salto=10,umbral=0.85,use_cluster:bool=True):
+    '''
+    (Function)
+        Esta funcion esta diseñada para usarla de manera mas general, ya que mueve el resize
+        debido a la variabilidad de pixelaje de la plantilla original con las distintas que se 
+        pueden sucitar en los raters.
+        Se recomienda usar n=200 y el de la plantilla resize=(30,30)
+        de igual manera hacer pruebas seria bueno, ya que si hay una diferencia muy grande entre n
+        y resize[0], puede dar malas clasificaciones
+    (Parameters)
+        - img: [str|np.aray] imagen que se desea clasificar
+        - dict_gris: [dict] diccionario que se extrae
+        - n: [int] tamaño de resize inicial considerelo en relacion con el resize del
+        dict_gris
+        - salto: [int|float] Tamaño de salto de descenso, si lo deja en 10 puede funcionar bien
+        pero en general entre mas pequeño mas tardado
+        - umbral: [float] porcentaje de aceptacion
+    (Authors)
+        - Hector Limon
+    '''
+    clase = 0
+    while True:
+        if n == 0:
+            break
+        clase =  detectar_clase(img,dict_gris,(n,n),False,umbral,use_cluster)
+        n -= salto
+        if clase != 0:
+            # Detecto una clase, revisamos colores para los mas confusos
+            #if clase == 'establecimiento_google':
+                
+            break
+    
+    return clase, n
+
+def iter_umbral_fn (img:np.array,dict_gris:dict, n:int=100,salto_n:int=10,
+                    umbral:float=0.95,salto_umbral:float=0.02,min_umbral:float=0.5,
+                    use_cluster:bool=False):
+    '''
+    (Function)
+        Esta funcion retoma la funcion clasificacion_iter_size agregando la iteracion sobre el umbral, debido a que 
+        no siempre se puede tener un umbral especifico, podemos jugar con el para tener un clasificacion excata, tenga 
+        cuidado de asignar un valor de n, en relacion al resize del dict_gris
+    (Paremeters)
+        - img: [np.array] arreglo matricial de imagen a clasificar
+        - dict_gris: [dict] diccionario de plantillas
+        - n: [int] se considera para el resize donde empezara use 100 si para dict_gris es 30 
+        - salto_n: [int] Tamaño de salto para el nuevo resize (disminuye n de n a n-salto_n) en cada iteracion
+        - umbral: [float] Umbral a usar en un principio, no sea austero.
+        - salto_umbral: En caso de ser necesario bajaremos el umbral de salto_umbral en salto_umbral hasta llegar min_umbral
+        - min_umbral: [float] el umbral minimo significativo, default 0.5, por lo que si llega a 0.5 ya no bajara mas
+        - use_cluster: [bool] Si es True usa imagenes clusterizadas a 2 colores, comete mas errores
+    (Returns)
+        - clase: [str] clase detectada, si es 0, no encontro clase
+        - n_1: [int] resize en el que encontro la clase
+        - umbral: [float] umbral en el que se detecto la clase
+    (Authors)
+        - Hector limon
+        (Por favor siga enriqueciendo el proceso y escriba su nombre como author)
+    '''
+    n_1 = 0
+    while n_1 == 0:
+        clase, n_1 = clasificacion_iter_size(img,dict_gris,n=n,salto=salto_n,umbral=umbral,use_cluster=use_cluster)
+        umbral -= salto_umbral
+        if umbral == min_umbral: break
+    return clase, n_1 , umbral
 
 def move_fotos_from_folder(ruta_plantillas,ruta_fotos,ruta_root,
                            create_folder=False,
