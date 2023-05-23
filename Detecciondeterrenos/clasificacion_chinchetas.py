@@ -6,6 +6,7 @@ import tqdm
 # from google.colab.patches import cv2_imshow
 import shutil 
 
+# holis
 # from google.colab import drive
 # drive.mount('/content/drive')
 def clusterizar_color(img,k=2,want_resize=True, resize=(240,240)):
