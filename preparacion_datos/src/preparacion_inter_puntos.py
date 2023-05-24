@@ -188,9 +188,9 @@ class prep:
         return base
 
     def data_prep_catastro(path_base, path_shp):
-        BPCE = pd.read_excel(path_base)
-        # BPCE = pd.read_csv(path_base, encoding='utf-8-sig',
-        #                     header=0, engine='python')
+        # BPCE = pd.read_excel(path_base)
+        BPCE = pd.read_csv(path_base, encoding='utf-8-sig',
+                            header=0, engine='python')
         #BPCE['CVEMZA'] = BPCE['CVEMZA'].astype(str).str.zfill(16)
         m_igecem = gpd.read_file(path_shp) ##Lee desde shp
         #print(m_igecem.columns)
@@ -203,7 +203,11 @@ class prep:
         # BPCE['CVEMZA'] = BPCE['ESTIMADO'].str[4:12] + '00000000'
         m_igecem.rename(columns={'CLAVECATAS':'CLAVECATASTRAL'}, inplace=True)
         m_igecem['CLAVECATASTRAL']=m_igecem['CLAVECATASTRAL'].astype(str)
-        BPCE['CLAVE_PREDIO'] = BPCE['CLAVE_PREDIO'].astype(str).str.replace("\n1","",regex=False).str.replace("\n4","",regex=False).str.zfill(16)
+        try:
+            BPCE['CLAVE_PREDIO'] = BPCE['CLAVE_PREDIO'].astype(str).str.replace("\n1","",regex=False).str.replace("\n4","",regex=False).str.zfill(16)
+        except:
+            BPCE['CLAVE_PREDIO'] = BPCE['CLAVECATASTRAL'].str[0:10] + '000000' 
+            BPCE['CLAVE_PREDIO'] = BPCE['CLAVE_PREDIO'].astype(str).str.replace("\n1","",regex=False).str.replace("\n4","",regex=False).str.zfill(16)
         BPCE.loc[BPCE['CURT'] == ' ', 'CURT'] = float('NaN')
         curts = BPCE.loc[BPCE['CURT'].notna()]
         curts['LAT_DMS'] = curts['CURT'].str[:11]
