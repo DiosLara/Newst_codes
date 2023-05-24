@@ -153,7 +153,9 @@ def get_dict_plantilla_gris(ruta_plantillas,want_resize=True,resize=(220,220),k=
 
 # Cargar la imagen y la plantilla
 
-def detectar_clase(imagen:str,dict_plantillas, resize=(224,224),return_list=False,umbral:float=0.8):
+def detectar_clase(imagen:str,dict_plantillas:dict, 
+                   resize:tuple=(224,224),return_list:bool=False,
+                   umbral:float=0.8,use_cluster:bool=True):
     '''
     (Function)
         Esta funcion recibe una imagen y retorna la clase a la que pertenece segun el diccionario
@@ -171,8 +173,11 @@ def detectar_clase(imagen:str,dict_plantillas, resize=(224,224),return_list=Fals
     list_clases = []
     result = False
     for key in dict_plantillas.keys():
-        # print(key)
-        plantilla_gris = dict_plantillas[key]['plantilla_gris']
+        if use_cluster:
+            # Como el cluster es imagen real 
+            plantilla_gris = cv2.cvtColor(dict_plantillas[key]['imagen_clus'], cv2.COLOR_BGR2GRAY)
+        else:
+            plantilla_gris = dict_plantillas[key]['plantilla_gris']
         result = comparacion_imagen(img, plantilla_gris, want_resize=True, resize=resize,umbral=umbral)
 
         if result:
