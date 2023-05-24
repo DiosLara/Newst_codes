@@ -186,6 +186,42 @@ class prep:
         # assert isinstance(border)
 
         return base
+    def replace_columns(df):
+
+        dict_buenas=['Unnamed: 0', 'CLAVE_CATASTRAL', 'CLAVEMANZANA', 'CLAVEZONA',
+       'DIRECCION', 'VALORTERRENO', 'VALORTERRENOCOMUN', 'VALORCONSTPROP',
+       'VALORCONSTCOMUN', 'SUPERFICIE', 'SUPERFICIETERRCOMUN',
+       'SUPERFICIECONST', 'SUPERFICIECONSTCOMUN', 'CLAVEANTERIOR', 'FECHAALTA',
+       'NOMBRE', 'APATERNO', 'AMATERNO', 'RFC', 'CLAVECP', 'CLAVEMUNICIPIO',
+       'CLAVEENTIDAD', 'CALLE', 'CLAVESTATUS', 'CLAVEASENTAMIENTO', 'EMAIL',
+       'CURP', 'ASENTAMIENTO_NR', 'CLAVECP_NR', 'EJERCICIO', 'CLAVEPERIODOINI',
+       'CLAVEPERIODOFIN', 'VALORCATASTRAL', 'STATUS', 'fol_rec', 'nombre',
+       'rfc', 'ubicacion', 'domicilio_fiscal', 'sup_terreno', 'sup_construc',
+       'valor_catastral', 'periodo', 'periodo_anual', 'fec_pago', 'importe',
+       'recargos', 'multas', 'descuento', 'fol_fisc_uuid', 'facturado',
+       'cve_ent', 'cve_mun', 'cve_loc', 'id_cat', 'CURT', 'notas', 
+       'LATITUD', 'LONGITUD', '_merge', 'CLAVECATASTRAL', 'ESTIMADO',
+       'CONTEO','geometry']
+
+        dict_malas = ['Unnamed_ 0', 'CLAVE_CATA', 'CLAVEMANZA', 'CLAVEZONA', 'DIRECCION',
+            'VALORTERRE', 'VALORTER_1', 'VALORCONST', 'VALORCON_1', 'SUPERFICIE',
+            'SUPERFIC_1', 'SUPERFIC_2', 'SUPERFIC_3', 'CLAVEANTER', 'FECHAALTA',
+            'NOMBRE', 'APATERNO', 'AMATERNO', 'RFC', 'CLAVECP', 'CLAVEMUNIC',
+            'CLAVEENTID', 'CALLE', 'CLAVESTATU', 'CLAVEASENT', 'EMAIL', 'CURP',
+            'ASENTAMIEN', 'CLAVECP_NR', 'EJERCICIO', 'CLAVEPERIO', 'CLAVEPER_1',
+            'VALORCATAS', 'STATUS', 'fol_rec', 'nombre_1', 'rfc_1', 'ubicacion',
+            'domicilio_', 'sup_terren', 'sup_constr', 'valor_cata', 'periodo',
+            'periodo_an', 'fec_pago', 'importe', 'recargos', 'multas', 'descuento',
+            'fol_fisc_u', 'facturado', 'cve_ent', 'cve_mun', 'cve_loc', 'id_cat',
+            'CURT', 'notas', 'LATITUD', 'LONGITUD', '_merge', 'CLAVECATAS',
+            'ESTIMADO', 'CONTEO', 'geometry']
+        
+        for i in range(len(dict_malas)):
+            for j in range(len(dict_buenas)):
+                n= dict_malas[i]
+                if n in dict_buenas[j]:
+                    df.rename(columns={n:dict_buenas[j]},inplace=True)
+        return df
 
     def data_prep_catastro(path_base, path_shp):
         # BPCE = pd.read_excel(path_base)
