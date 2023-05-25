@@ -10,6 +10,7 @@ import os
 from scipy.spatial import cKDTree
 from shapely.geometry import Point
 from dataprep.clean import clean_lat_long
+import xml.etree.ElementTree as ET
 
 '''Integración de todos los elementos necesarios para el prep de bases geo y con clave catastral'''
 
@@ -186,47 +187,11 @@ class prep:
         # assert isinstance(border)
 
         return base
-    def replace_columns(df):
-
-        dict_buenas=['Unnamed: 0', 'CLAVE_CATASTRAL', 'CLAVEMANZANA', 'CLAVEZONA',
-       'DIRECCION', 'VALORTERRENO', 'VALORTERRENOCOMUN', 'VALORCONSTPROP',
-       'VALORCONSTCOMUN', 'SUPERFICIE', 'SUPERFICIETERRCOMUN',
-       'SUPERFICIECONST', 'SUPERFICIECONSTCOMUN', 'CLAVEANTERIOR', 'FECHAALTA',
-       'NOMBRE', 'APATERNO', 'AMATERNO', 'RFC', 'CLAVECP', 'CLAVEMUNICIPIO',
-       'CLAVEENTIDAD', 'CALLE', 'CLAVESTATUS', 'CLAVEASENTAMIENTO', 'EMAIL',
-       'CURP', 'ASENTAMIENTO_NR', 'CLAVECP_NR', 'EJERCICIO', 'CLAVEPERIODOINI',
-       'CLAVEPERIODOFIN', 'VALORCATASTRAL', 'STATUS', 'fol_rec', 'nombre',
-       'rfc', 'ubicacion', 'domicilio_fiscal', 'sup_terreno', 'sup_construc',
-       'valor_catastral', 'periodo', 'periodo_anual', 'fec_pago', 'importe',
-       'recargos', 'multas', 'descuento', 'fol_fisc_uuid', 'facturado',
-       'cve_ent', 'cve_mun', 'cve_loc', 'id_cat', 'CURT', 'notas', 
-       'LATITUD', 'LONGITUD', '_merge', 'CLAVECATASTRAL', 'ESTIMADO',
-       'CONTEO','geometry']
-
-        dict_malas = ['Unnamed_ 0', 'CLAVE_CATA', 'CLAVEMANZA', 'CLAVEZONA', 'DIRECCION',
-            'VALORTERRE', 'VALORTER_1', 'VALORCONST', 'VALORCON_1', 'SUPERFICIE',
-            'SUPERFIC_1', 'SUPERFIC_2', 'SUPERFIC_3', 'CLAVEANTER', 'FECHAALTA',
-            'NOMBRE', 'APATERNO', 'AMATERNO', 'RFC', 'CLAVECP', 'CLAVEMUNIC',
-            'CLAVEENTID', 'CALLE', 'CLAVESTATU', 'CLAVEASENT', 'EMAIL', 'CURP',
-            'ASENTAMIEN', 'CLAVECP_NR', 'EJERCICIO', 'CLAVEPERIO', 'CLAVEPER_1',
-            'VALORCATAS', 'STATUS', 'fol_rec', 'nombre_1', 'rfc_1', 'ubicacion',
-            'domicilio_', 'sup_terren', 'sup_constr', 'valor_cata', 'periodo',
-            'periodo_an', 'fec_pago', 'importe', 'recargos', 'multas', 'descuento',
-            'fol_fisc_u', 'facturado', 'cve_ent', 'cve_mun', 'cve_loc', 'id_cat',
-            'CURT', 'notas', 'LATITUD', 'LONGITUD', '_merge', 'CLAVECATAS',
-            'ESTIMADO', 'CONTEO', 'geometry']
-        
-        for i in range(len(dict_malas)):
-            for j in range(len(dict_buenas)):
-                n= dict_malas[i]
-                if n in dict_buenas[j]:
-                    df.rename(columns={n:dict_buenas[j]},inplace=True)
-        return df
 
     def data_prep_catastro(path_base, path_shp):
-        # BPCE = pd.read_excel(path_base)
-        BPCE = pd.read_csv(path_base, encoding='utf-8-sig',
-                            header=0, engine='python')
+        BPCE = pd.read_excel(path_base)
+        # BPCE = pd.read_csv(path_base, encoding='utf-8-sig',
+        #                     header=0, engine='python')
         #BPCE['CVEMZA'] = BPCE['CVEMZA'].astype(str).str.zfill(16)
         m_igecem = gpd.read_file(path_shp) ##Lee desde shp
         #print(m_igecem.columns)
@@ -245,9 +210,9 @@ class prep:
             BPCE['CLAVE_PREDIO'] = BPCE['CLAVECATASTRAL'].str[0:10] + '000000' 
             BPCE['CLAVE_PREDIO'] = BPCE['CLAVE_PREDIO'].astype(str).str.replace("\n1","",regex=False).str.replace("\n4","",regex=False).str.zfill(16)
         BPCE.loc[BPCE['CURT'] == ' ', 'CURT'] = float('NaN')
-        curts = BPCE.loc[BPCE['CURT'].notna()]
-        curts['LAT_DMS'] = curts['CURT'].str[:11]
-        curts['LON_DMS'] = curts['CURT'].str[11:]
+        curts = BPCE.loc[BPCE['CURT'].astype(str).notna()]
+        curts['LAT_DMS'] = curts['CURT'].astype(str).str[:11]
+        curts['LON_DMS'] = curts['CURT'].astype(str).str[11:]
         curts['Latitude'] = curts['LAT_DMS'].astype(str).str[0:2].str.cat(curts['LAT_DMS'].astype(str).str[2:4], '°').str.cat(curts['LAT_DMS'].astype(
             str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''N")
         curts['Longitude'] = curts['LON_DMS'].astype(str).str[0:2].str.cat(curts['LON_DMS'].astype(str).str[2:4], '°').str.cat(curts['LON_DMS'].astype(
