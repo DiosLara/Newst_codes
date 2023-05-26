@@ -421,17 +421,16 @@ def post_points_catastro(path_base, path_shp, funcion):
 
         Los chunks se obtienen a partir de los cores de la pc en que se ejecute este script
     """
-
-    test_igecem = prep.data_prep_catastro(path_base, path_shp)
-    #print('test igecem es: ',test_igecem)
-    # else:
-    #     m_igecem = gpd.read_file(path_shp) ##Lee desde shp
-
-    # #     m_igecem.crs= 4326 #m_igecem.to_crs(4326)
-    # try:
-    #     m_igecem = m_igecem.loc[~m_igecem['manz'].astype(str).str.endswith('000')]
-    # except: 
-    #    #test_igecem = m_igecem
+    if path_base:
+        test_igecem = prep.data_prep_catastro(path_base, path_shp)
+        print('test igecem es: ',test_igecem)
+    else:
+        m_igecem = gpd.read_file(path_shp) ##Lee desde shp
+        m_igecem.crs= 4326 #m_igecem.to_crs(4326)
+    try:
+        m_igecem = m_igecem.loc[~m_igecem['manz'].astype(str).str.endswith('000')]
+    except: 
+       test_igecem = m_igecem
     test_igecem_chunks =  np.array_split(test_igecem, os.cpu_count()-1) ##Aqui se especifica si se requiere un loc y los chunks
     
     df_concat = pd.DataFrame()

@@ -10,7 +10,7 @@ import os
 from scipy.spatial import cKDTree
 from shapely.geometry import Point
 from dataprep.clean import clean_lat_long
-
+from dask.dataframe import from_pandas
 '''Integración de todos los elementos necesarios para el prep de bases geo y con clave catastral'''
 
 diccionarios= {'Naucalpan':
@@ -237,7 +237,7 @@ class prep:
         # except: 
         #     pass
         # BPCE['CVEMZA'] = BPCE['ESTIMADO'].str[4:12] + '00000000'
-        m_igecem.rename(columns={'CLAVECATAS':'CLAVECATASTRAL'}, inplace=True)
+        m_igecem.rename(columns={'id_cat':'CLAVECATASTRAL'}, inplace=True)
         m_igecem['CLAVECATASTRAL']=m_igecem['CLAVECATASTRAL'].astype(str)
         try:
             BPCE['CLAVE_PREDIO'] = BPCE['CLAVE_PREDIO'].astype(str).str.replace("\n1","",regex=False).str.replace("\n4","",regex=False).str.zfill(16)
@@ -246,14 +246,14 @@ class prep:
             BPCE['CLAVE_PREDIO'] = BPCE['CLAVE_PREDIO'].astype(str).str.replace("\n1","",regex=False).str.replace("\n4","",regex=False).str.zfill(16)
         BPCE.loc[BPCE['CURT'] == ' ', 'CURT'] = float('NaN')
         curts = BPCE.loc[BPCE['CURT'].notna()]
-        curts['LAT_DMS'] = curts['CURT'].str[:11]
-        curts['LON_DMS'] = curts['CURT'].str[11:]
+        curts['LAT_DMS'] = curts['CURT'].astype(str).str[:11]
+        curts['LON_DMS'] = curts['CURT'].astype(str).str[11:]
         curts['Latitude'] = curts['LAT_DMS'].astype(str).str[0:2].str.cat(curts['LAT_DMS'].astype(str).str[2:4], '°').str.cat(curts['LAT_DMS'].astype(
             str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''N")
         curts['Longitude'] = curts['LON_DMS'].astype(str).str[0:2].str.cat(curts['LON_DMS'].astype(str).str[2:4], '°').str.cat(curts['LON_DMS'].astype(
             str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''W")
-        #curts_chunks = from_pandas(curts, npartitions=20) ## Se agrego por un bug que tiene clean_lat_long
-        curts = clean_lat_long(curts, lat_col="Latitude",
+        curts_chunks = from_pandas(curts, npartitions=20) ## Se agrego por un bug que tiene clean_lat_long
+        curts = clean_lat_long(curts_chunks, lat_col="Latitude",
                              long_col="Longitude", split=True)
         BPCE = BPCE.loc[BPCE['CURT'].isna()]
         BPCE = pd.concat([BPCE.loc[BPCE['CURT'].isna()], curts], axis=0)
