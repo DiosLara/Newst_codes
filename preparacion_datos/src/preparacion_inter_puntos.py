@@ -10,7 +10,7 @@ import os
 from scipy.spatial import cKDTree
 from shapely.geometry import Point
 from dataprep.clean import clean_lat_long
-
+from dask.dataframe import from_pandas
 '''Integración de todos los elementos necesarios para el prep de bases geo y con clave catastral'''
 
 diccionarios= {'Naucalpan':
@@ -186,11 +186,46 @@ class prep:
         # assert isinstance(border)
 
         return base
+    def replace_columns(df):
+
+        dict_buenas=['geometry', 'index_right', 'CLAVE_CATASTRAL', 'CLAVEMANZANA',
+       'CLAVEZONA', 'DIRECCION', 'VALORTERRENO', 'VALORTERRENOCOMUN',
+       'VALORCONSTPROP', 'VALORCONSTCOMUN', 'SUPERFICIE',
+       'SUPERFICIETERRCOMUN', 'SUPERFICIECONST', 'SUPERFICIECONSTCOMUN',
+       'CLAVEANTERIOR', 'NOMBRE', 'APATERNO', 'AMATERNO', 'RFC', 'CLAVECP',
+       'CLAVEMUNICIPIO', 'CLAVEENTIDAD', 'CALLE', 'CLAVESTATUS',
+       'CLAVEASENTAMIENTO', 'EMAIL', 'CURP', 'ASENTAMIENTO_NR', 'CLAVECP_NR',
+       'EJERCICIO', 'CLAVEPERIODOINI', 'CLAVEPERIODOFIN', 'VALORCATASTRAL',
+       'STATUS', 'CLAVE_MANZ', 'CLAVE_PREDIO', 'fol_rec', 'nombre', 'rfc',
+       'ubicacion', 'domicilio_fiscal', 'sup_terreno', 'sup_construc',
+       'valor_catastral', 'importe', 'recargos', 'multas', 'descuento',
+       'fol_fisc_uuid', 'facturado', 'cve_ent', 'cve_mun', 'cve_loc', 'id_cat',
+       'curt', 'notas', 'mun', 'zona', 'manz', 'cve_cat', 'LATITUD',
+       'LONGITUD', 'CLAVECATASTRAL', 'ESTIMADO', 'CURT']
+
+        dict_malas = ['index_righ', 'CLAVE_CATA', 'CLAVEMANZA', 'CLAVEZONA', 'DIRECCION',
+       'VALORTERRE', 'VALORTER_1', 'VALORCONST', 'VALORCON_1', 'SUPERFICIE',
+       'SUPERFIC_1', 'SUPERFIC_2', 'SUPERFIC_3', 'CLAVEANTER', 'NOMBRE',
+       'APATERNO', 'AMATERNO', 'RFC', 'CLAVECP', 'CLAVEMUNIC', 'CLAVEENTID',
+       'CALLE', 'CLAVESTATU', 'CLAVEASENT', 'EMAIL', 'CURP', 'ASENTAMIEN',
+       'CLAVECP_NR', 'EJERCICIO', 'CLAVEPERIO', 'CLAVEPER_1', 'VALORCATAS',
+       'STATUS', 'CLAVE_MANZ', 'CLAVE_PRED', 'fol_rec', 'nombre_1', 'rfc_1',
+       'ubicacion', 'domicilio_', 'sup_terren', 'sup_constr', 'valor_cata',
+       'importe', 'recargos', 'multas', 'descuento', 'fol_fisc_u', 'facturado',
+       'cve_ent', 'cve_mun', 'cve_loc', 'id_cat', 'curt', 'notas', 'mun',
+       'zona', 'manz', 'cve_cat', 'LATITUD', 'LONGITUD', 'CLAVECATAS',
+       'ESTIMADO', 'CURT_1', 'geometry']
+        
+        for i in range(len(dict_malas)):
+            for j in range(len(dict_buenas)):
+                n= dict_malas[i]
+                if n in dict_buenas[j]:
+                    df.rename(columns={n:dict_buenas[j]},inplace=True) 
 
     def data_prep_catastro(path_base, path_shp):
-        BPCE = pd.read_excel(path_base)
-        # BPCE = pd.read_csv(path_base, encoding='utf-8-sig',
-        #                     header=0, engine='python')
+        # BPCE = pd.read_excel(path_base)
+        BPCE = pd.read_csv(path_base, encoding='utf-8-sig',
+                            header=0, engine='python')
         #BPCE['CVEMZA'] = BPCE['CVEMZA'].astype(str).str.zfill(16)
         m_igecem = gpd.read_file(path_shp) ##Lee desde shp
         #print(m_igecem.columns)
@@ -201,19 +236,23 @@ class prep:
         # except: 
         #     pass
         # BPCE['CVEMZA'] = BPCE['ESTIMADO'].str[4:12] + '00000000'
-        m_igecem.rename(columns={'CLAVECATAS':'CLAVECATASTRAL'}, inplace=True)
+        m_igecem.rename(columns={'id_cat':'CLAVECATASTRAL'}, inplace=True)
         m_igecem['CLAVECATASTRAL']=m_igecem['CLAVECATASTRAL'].astype(str)
-        BPCE['CLAVE_PREDIO'] = BPCE['CLAVE_PREDIO'].astype(str).str.replace("\n1","",regex=False).str.replace("\n4","",regex=False).str.zfill(16)
+        try:
+            BPCE['CLAVE_PREDIO'] = BPCE['CLAVE_PREDIO'].astype(str).str.replace("\n1","",regex=False).str.replace("\n4","",regex=False).str.zfill(16)
+        except:
+            BPCE['CLAVE_PREDIO'] = BPCE['CLAVECATASTRAL'].str[0:10] + '000000' 
+            BPCE['CLAVE_PREDIO'] = BPCE['CLAVE_PREDIO'].astype(str).str.replace("\n1","",regex=False).str.replace("\n4","",regex=False).str.zfill(16)
         BPCE.loc[BPCE['CURT'] == ' ', 'CURT'] = float('NaN')
         curts = BPCE.loc[BPCE['CURT'].notna()]
-        curts['LAT_DMS'] = curts['CURT'].str[:11]
-        curts['LON_DMS'] = curts['CURT'].str[11:]
+        curts['LAT_DMS'] = curts['CURT'].astype(str).str[:11]
+        curts['LON_DMS'] = curts['CURT'].astype(str).str[11:]
         curts['Latitude'] = curts['LAT_DMS'].astype(str).str[0:2].str.cat(curts['LAT_DMS'].astype(str).str[2:4], '°').str.cat(curts['LAT_DMS'].astype(
             str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''N")
         curts['Longitude'] = curts['LON_DMS'].astype(str).str[0:2].str.cat(curts['LON_DMS'].astype(str).str[2:4], '°').str.cat(curts['LON_DMS'].astype(
             str).str[4:6].astype(str) + str('.') + curts['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''W")
-        #curts_chunks = from_pandas(curts, npartitions=20) ## Se agrego por un bug que tiene clean_lat_long
-        curts = clean_lat_long(curts, lat_col="Latitude",
+        curts_chunks = from_pandas(curts, npartitions=20) ## Se agrego por un bug que tiene clean_lat_long
+        curts = clean_lat_long(curts_chunks, lat_col="Latitude",
                              long_col="Longitude", split=True)
         BPCE = BPCE.loc[BPCE['CURT'].isna()]
         BPCE = pd.concat([BPCE.loc[BPCE['CURT'].isna()], curts], axis=0)
