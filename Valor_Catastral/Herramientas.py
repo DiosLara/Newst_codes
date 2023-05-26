@@ -154,8 +154,8 @@ def get_lados_xy(poligono, n_digits:int=4):
         vertices = list(poligono.exterior.coords)
 
         # Calcular la distancia entre los vértices adyacentes
-        lado_1 = Point(vertices[0]).distance(Point(vertices[1]))
-        lado_2 = Point(vertices[1]).distance(Point(vertices[2]))
+        lado_1 = round(Point(vertices[0]).distance(Point(vertices[1])),n_digits)
+        lado_2 = round(Point(vertices[1]).distance(Point(vertices[2])),n_digits)
         return lado_1, lado_2
 
 
