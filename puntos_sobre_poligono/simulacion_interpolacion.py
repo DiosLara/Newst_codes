@@ -9,7 +9,8 @@ import shapely
 import concurrent.futures
 import os
 import sys
-sys.path.append(r'C:\Users\mfpen\OneDrive\Documentos\Repositorios\geoloc2\preparacion_datos\src')
+import math
+sys.path.append(r'D:\Repositorios\geoloc2\preparacion_datos\src')
 from preparacion_inter_puntos import prep
 '''Interpolación de puntos'''
 def _to_2d(x, y, z):
@@ -421,7 +422,7 @@ def post_points_catastro(path_base, path_shp, funcion):
 
         Los chunks se obtienen a partir de los cores de la pc en que se ejecute este script
     """
-    if path_base:
+    if path_base == float('Nan'):
         test_igecem = prep.data_prep_catastro(path_base, path_shp)
         print('test igecem es: ',test_igecem)
     else:
@@ -430,7 +431,9 @@ def post_points_catastro(path_base, path_shp, funcion):
     try:
         m_igecem = m_igecem.loc[~m_igecem['manz'].astype(str).str.endswith('000')]
     except: 
-       test_igecem = m_igecem
+        pass
+    test_igecem = m_igecem
+    prep.replace_columns(test_igecem)
     test_igecem_chunks =  np.array_split(test_igecem, os.cpu_count()-1) ##Aqui se especifica si se requiere un loc y los chunks
     
     df_concat = pd.DataFrame()

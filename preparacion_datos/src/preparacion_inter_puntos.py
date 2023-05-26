@@ -220,8 +220,7 @@ class prep:
             for j in range(len(dict_buenas)):
                 n= dict_malas[i]
                 if n in dict_buenas[j]:
-                    df.rename(columns={n:dict_buenas[j]},inplace=True)
-        return df
+                    df.rename(columns={n:dict_buenas[j]},inplace=True) 
 
     def data_prep_catastro(path_base, path_shp):
         # BPCE = pd.read_excel(path_base)
@@ -295,39 +294,3 @@ def ckdnearest(gdA, gdB):
         axis=1)
 
     return gdf
-def replace_columns(df):
-
-    dict_buenas=['geometry', 'index_right', 'CLAVE_CATASTRAL', 'CLAVEMANZANA',
-    'CLAVEZONA', 'DIRECCION', 'VALORTERRENO', 'VALORTERRENOCOMUN',
-    'VALORCONSTPROP', 'VALORCONSTCOMUN', 'SUPERFICIE',
-    'SUPERFICIETERRCOMUN', 'SUPERFICIECONST', 'SUPERFICIECONSTCOMUN',
-    'CLAVEANTERIOR', 'NOMBRE', 'APATERNO', 'AMATERNO', 'RFC', 'CLAVECP',
-    'CLAVEMUNICIPIO', 'CLAVEENTIDAD', 'CALLE', 'CLAVESTATUS',
-    'CLAVEASENTAMIENTO', 'EMAIL', 'CURP', 'ASENTAMIENTO_NR', 'CLAVECP_NR',
-    'EJERCICIO', 'CLAVEPERIODOINI', 'CLAVEPERIODOFIN', 'VALORCATASTRAL',
-    'STATUS', 'CLAVE_MANZ', 'CLAVE_PREDIO', 'fol_rec', 'nombre', 'rfc',
-    'ubicacion', 'domicilio_fiscal', 'sup_terreno', 'sup_construc',
-    'valor_catastral', 'importe', 'recargos', 'multas', 'descuento',
-    'fol_fisc_uuid', 'facturado', 'cve_ent', 'cve_mun', 'cve_loc', 'id_cat',
-    'curt', 'notas', 'mun', 'zona', 'manz', 'cve_cat', 'LATITUD',
-    'LONGITUD', 'CLAVECATASTRAL', 'ESTIMADO', 'CURT']
-
-    dict_malas = ['index_righ', 'CLAVE_CATA', 'CLAVEMANZA', 'CLAVEZONA', 'DIRECCION',
-    'VALORTERRE', 'VALORTER_1', 'VALORCONST', 'VALORCON_1', 'SUPERFICIE',
-    'SUPERFIC_1', 'SUPERFIC_2', 'SUPERFIC_3', 'CLAVEANTER', 'NOMBRE',
-    'APATERNO', 'AMATERNO', 'RFC', 'CLAVECP', 'CLAVEMUNIC', 'CLAVEENTID',
-    'CALLE', 'CLAVESTATU', 'CLAVEASENT', 'EMAIL', 'CURP', 'ASENTAMIEN',
-    'CLAVECP_NR', 'EJERCICIO', 'CLAVEPERIO', 'CLAVEPER_1', 'VALORCATAS',
-    'STATUS', 'CLAVE_MANZ', 'CLAVE_PRED', 'fol_rec', 'nombre_1', 'rfc_1',
-    'ubicacion', 'domicilio_', 'sup_terren', 'sup_constr', 'valor_cata',
-    'importe', 'recargos', 'multas', 'descuento', 'fol_fisc_u', 'facturado',
-    'cve_ent', 'cve_mun', 'cve_loc', 'id_cat', 'curt', 'notas', 'mun',
-    'zona', 'manz', 'cve_cat', 'LATITUD', 'LONGITUD', 'CLAVECATAS',
-    'ESTIMADO', 'CURT_1', 'geometry']
-    
-    for i in range(len(dict_malas)):
-        for j in range(len(dict_buenas)):
-            n= dict_malas[i]
-            if n in dict_buenas[j]:
-                df.rename(columns={n:dict_buenas[j]},inplace=True)
-    return df
