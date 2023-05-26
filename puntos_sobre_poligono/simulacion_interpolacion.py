@@ -441,12 +441,13 @@ def post_points_catastro(path_base, path_shp, funcion):
 
     return df_concat
 
+
 if __name__ == "__main__":
     PATH_BASE = float('Nan')
-    PATH_SHP  = r"C:\Users\dlara\Tamaulipas_shapes_2020.shp"
+    PATH_SHP  = r"D:\Secretaría\cruces_bases\Atlacomulco\final\test_igecem_final.shp"
 
     df_final_catastro = post_points_catastro(PATH_BASE, PATH_SHP, task_chunks)
 
     print(df_final_catastro)    
 
-    df_final_catastro.to_csv(r'C:\Users\dlara/Matamoros_puntos.csv', encoding='utf-8-sig')
+    df_final_catastro.to_csv(r'D:\Secretaría\cruces_bases\puntos/Atlacomulco_puntos.csv', encoding='utf-8-sig')
