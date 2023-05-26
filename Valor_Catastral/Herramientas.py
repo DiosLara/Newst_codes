@@ -575,3 +575,48 @@ def cruzar_chinchetas_vs_dnue(path_chinchetas,path_dnue,municipio=None,dist_max=
         print('Chinchetas falta por encontrar: ', gdf_ch[gdf_ch.id.fillna('vacio')=='vacio'].shape[0])
         print('Total chichentas              : ', gdf_ch.shape[0])
     return gdf_ch
+
+ def agrupar_cruce_chinchetas( cruce1, cols_agg):
+    '''
+    Luego de hacer un primer cruce, es razonable pensar que un id, este en 1 o mas poligonos de chinchetas, las razones pueden ser; <br>
+    - Es una plaza <br>
+    - Es un mercado <br>
+    - La separacion entre poligonos es minima <br>
+    - otra <br>
+
+    Entonces compactaremos todos esos id, en un solo registro de manere que concatenemos los posibles id que se corresponden a esa chincheta.
+    '''
+    # Hacemos todo str menos la geometry para agrupar
+    for col in cols_agg:
+        if col == 'geometry':
+            print('omitio ', col)
+            continue
+        cruce1[col] = cruce1[col].astype(str)
+
+
+    # Creamos diccionario de agrupacion
+    dict_agg = {}
+    for k in cols_agg:
+        dict_agg[k] = '|'.join
+
+
+    # Agrupamos para concatenar los datos duplicados de cada geometria
+    cruce1_ = cruce1.groupby('geometry', as_index=False,sort=False).agg(dict_agg).reset_index(drop=True)
+    # Hacemos GeoDataFrame
+    cruce1_ = gpd.GeoDataFrame(cruce1_, geometry='geometry')
+    
+    # Encontrar los repetidos
+    ind_f = pd.Series(cruce1_.id.str.replace('nan','').str.strip('|').value_counts().index)
+    ind_f = ind_f.map(lambda y: y if str(y).find('|')>0 else 'vacio')
+    ind_f[ind_f != 'vacio']
+    
+    # Borramos duplicados
+    print('Shape original: ', cruce1.shape)
+    cruce1.drop_duplicates(['geometry','cve_cat'],inplace=True)
+    print('Shape final  : ',cruce1.shape)
+
+    # Asignamos lo encontrado al de chinchetas
+    for i in tqdm.tqdm(cruce1_[cruce1_.id.isin(ind_f)].index):
+        for col in cols_agg:
+            cruce1.loc[cruce1['geometry'] == cruce1.loc[i,'geometry'], col] = cruce1_.loc[i,col]
+    return cruce1
