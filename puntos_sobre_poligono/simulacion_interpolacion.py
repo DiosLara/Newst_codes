@@ -10,7 +10,7 @@ import concurrent.futures
 import os
 import sys
 import math
-sys.path.append(r'D:\Repositorios\geoloc2\preparacion_datos\src')
+sys.path.append(r'C:\Users\dlara\Proyectos_git\geoloc2\preparacion_datos\src')
 from preparacion_inter_puntos import prep
 '''Interpolación de puntos'''
 def _to_2d(x, y, z):
@@ -94,8 +94,8 @@ def points_polis(df):
             ndb.crs='epsg:3857'
             ndb2.crs='epsg:3857'
            
-            print(gpd.sjoin(gpd.GeoDataFrame(df).set_geometry('geometry'), gpd.GeoDataFrame(
-                ndb2).set_geometry(0)).dropna(how='all'))
+            # print(gpd.sjoin(gpd.GeoDataFrame(df).set_geometry('geometry'), gpd.GeoDataFrame(
+            #     ndb2).set_geometry(0)).dropna(how='all'))
         
             m2 = gpd.sjoin(gpd.GeoDataFrame(df).set_geometry('geometry'), gpd.GeoDataFrame(
                 ndb2).set_geometry(0), how='right',predicate='intersects').dropna(how='all')
@@ -345,7 +345,8 @@ def task_interpolation(n4_n):
 
 def task_chunks(chunks):    
     df_final = pd.DataFrame(columns=['index_left', 0, 'CLAVE_PREDIO'])
-    print(chunks)
+    # print(chunks)
+    # print('chunks:  ',chunks.columns[chunks.columns.duplicated()])
     for i ,cve in tqdm(enumerate(chunks['CLAVE_PREDIO']),total = len(chunks)):
         df = chunks.loc[chunks['CLAVE_PREDIO'].str.contains(cve)]
         
@@ -359,12 +360,12 @@ def task_chunks(chunks):
         m1.crs= 'epsg:3857'
         m2 = gpd.GeoDataFrame(m2).set_geometry(0)
         m2.crs= 'epsg:3857'
-        m1['LONGITUD']=m1[0].x
+        m1['LONGITUD_1']=m1[0].x
         m1['LATITUD_1']=m1[0].y
-        m2['LONGITUD']=m2[0].x
+        m2['LONGITUD_1']=m2[0].x
         m2['LATITUD_1']=m2[0].y
-        m1.sort_values(['LONGITUD', 'LATITUD_1'], inplace=True)
-        m2.sort_values(['LONGITUD','LATITUD_1'], inplace=True)
+        m1.sort_values(['LONGITUD_1', 'LATITUD_1'], inplace=True)
+        m2.sort_values(['LONGITUD_1','LATITUD_1'], inplace=True)
         try:
             m2 = m2.drop(columns=['geometry'])
         except:
@@ -406,14 +407,15 @@ def task_chunks(chunks):
             n= t2.shape[0]
             t2=t2.head(int(n/2))
             total=pd.concat([t1,t2], axis=0)
+            # print('dentro del try:  ',total.columns[total.columns.duplicated()])
             df_final = pd.concat([total,df_final], axis=0)
         except:
+            # print('fuera del try:  ',tot.columns[tot.columns.duplicated()])
             df_final = pd.concat([tot,df_final], axis=0)
             pass
         
         # break  ##Quitar esta linea, solo funcional para test
-            
-            
+          
     return df_final
 def post_points_catastro(path_base, path_shp, funcion):
     """
@@ -424,7 +426,7 @@ def post_points_catastro(path_base, path_shp, funcion):
     """
     if path_base == float('Nan'):
         test_igecem = prep.data_prep_catastro(path_base, path_shp)
-        print('test igecem es: ',test_igecem)
+        # print('test igecem es: ',test_igecem)
     else:
         m_igecem = gpd.read_file(path_shp) ##Lee desde shp
         m_igecem.crs= 4326 #m_igecem.to_crs(4326)
@@ -434,6 +436,8 @@ def post_points_catastro(path_base, path_shp, funcion):
         pass
     test_igecem = m_igecem
     prep.replace_columns(test_igecem)
+    test_igecem.drop(columns= test_igecem.columns[(test_igecem.columns.str.contains('index'))|(test_igecem.columns.duplicated())], inplace=True)
+    # print('test_igecem:  ',test_igecem.columns[test_igecem.columns.duplicated()])
     test_igecem_chunks =  np.array_split(test_igecem, os.cpu_count()-1) ##Aqui se especifica si se requiere un loc y los chunks
     
     df_concat = pd.DataFrame()
@@ -447,10 +451,10 @@ def post_points_catastro(path_base, path_shp, funcion):
 
 if __name__ == "__main__":
     PATH_BASE = float('Nan')
-    PATH_SHP  = r"D:\Secretaría\cruces_bases\Atlacomulco\final\test_igecem_final.shp"
+    PATH_SHP  = r"C:\Users\dlara\Downloads\final\final\test_igecem_final.shp"
 
     df_final_catastro = post_points_catastro(PATH_BASE, PATH_SHP, task_chunks)
 
     print(df_final_catastro)    
 
-    df_final_catastro.to_csv(r'D:\Secretaría\cruces_bases\puntos/Atlacomulco_puntos.csv', encoding='utf-8-sig')
+    df_final_catastro.to_csv(r'C:\Users\dlara\Atlacomulco_puntos.csv', encoding='utf-8-sig')
