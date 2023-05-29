@@ -241,18 +241,18 @@ def map_d(x, in_min, in_max, out_min, out_max):
 def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,
                 terreno,conf_terreno,clase_terreno,raster,ancho,alto,
                 dim,minx,maxx,miny,maxy,shape,angulo_get=0,opt_conf_thres=0.05,
-                imshow=False,imsave=False,path="",clasificar:bool=True):
+                imshow=False,imsave=False,path="",clasificar:bool=True, cutline_factor:int=1):
     with rasterio.open(raster) as src:
-        with tqdm.tqdm(total=alto*ancho) as pbar:
-            for j in range(ancho):#ancho
-                for i in range(alto):#alto
+        with tqdm.tqdm(total=alto*ancho*cutline_factor**2) as pbar:
+            for j in range(ancho*cutline_factor):#ancho
+                for i in range(alto*cutline_factor):#alto
                     generar=0
                     label=raster.replace('\\','/').split('/')[-1][:-4]+'_'
                     nameimg=label.lower()+str(i)+'_'+str(j)
                     cuadro=[]
                     for k in range(2):
                         for l in range(2):
-                            cuadro.append((minx+(maxx-minx)/ancho*(j+k),maxy-(maxy-miny)/alto*(i+l)))
+                            cuadro.append((minx+(maxx-minx)/ancho*(j/cutline_factor+k),maxy-(maxy-miny)/alto*(i/cutline_factor+l)))
                     cuadro=[cuadro[0],cuadro[1],cuadro[3],cuadro[2],cuadro[0]]
                     cvees=[]
                     for punto in cuadro:
@@ -261,7 +261,7 @@ def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,
                         mini_df=shape[(shape[0]<=x)&(shape[2]>=x)&(shape[1]<=y)&(shape[3]>=y)]
                         if len(mini_df)>0:
                             generar=1
-                            cvees.append(mini_df["cve_cat"].values)### traer todas las cve_catastrales del punto sobre el raster ...Pendiente
+                            #cvees.append(mini_df["cve_cat"].values)### traer todas las cve_catastrales del punto sobre el raster ...Pendiente
 #                             print(cvees)
                     if generar==1:
                         shapes=[{'type':'Polygon','coordinates':[cuadro]}]
@@ -369,7 +369,9 @@ def shape_transform(shape):
     shape1['points']=c
     shape1=shape1['points'].str.split(',',expand=True)
     shape1=shape1.astype({0:'float64',1:'float64',2:'float64',3:'float64'})
-    shape1["cve_cat"]=shape["cve_cat"]
+    #shape1["cve_cat"]=shape["cve_cat"]
+    #shape1['zona'] = shape['zona']
+    #shape1['manz'] = shape['manz']
     shape1["angulo_manzana"]=shape["angulo_manzana"]
     shape=shape1
     return shape
