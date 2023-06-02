@@ -35,6 +35,8 @@ import torch.nn as nn
 from PIL import Image
 from torchvision import models
 from torchsummary import summary
+from shapely.ops import cascaded_union
+from clasificacion_chinchetas import *
 opt_img_size=256
 class modelo():
     def __init__(self,weights=["yolov7.pt"]):
@@ -238,10 +240,13 @@ def map_d(x, in_min, in_max, out_min, out_max):
     """Genera una interpolacion para pasar de un rango a otro"""
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
-def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,
-                terreno,conf_terreno,clase_terreno,raster,ancho,alto,
+def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,                
+                terreno,conf_terreno,clase_terreno,
+                clase_chinchetas,umbrales,sizes,
+                raster,ancho,alto,
                 dim,minx,maxx,miny,maxy,shape,angulo_get=0,opt_conf_thres=0.05,
-                imshow=False,imsave=False,path="",clasificar:bool=True, cutline_factor:int=1):
+                imshow=False,imsave=False,path="",clasificar_casas:bool=True, cutline_factor:int=1,
+                clasificar_chinchetas:bool=True, dict_gris={}):
     with rasterio.open(raster) as src:
         with tqdm.tqdm(total=alto*ancho*cutline_factor**2) as pbar:
             for j in range(ancho*cutline_factor):#ancho
@@ -302,10 +307,27 @@ def postproceso(Modelo,model_class,casas,conf_casas,clase_casas,
                             x2,y2=df_cache.loc[cs_1,'end_point_im']
                             df_aux=image_ro.copy()
                             df_aux=df_aux[y1:y2,x1:x2]
-                            if clasificar:
+                            if clasificar_casas:
                                 clase,imagen=model_class.predict_image(df_aux)
                             else:
                                 clase = 'No_Aplica'
+                            if clasificar_chinchetas:
+                                print('entra')                                
+                                clase_aux, n_aux, umbral_aux  = iter_umbral_fn(df_aux, dict_gris,n=100,
+                                                                               salto_n=5,
+                                                                               umbral=0.94,min_umbral=0.75)
+                                cv2.imshow('df_aux',df_aux)
+                                cv2.waitKey()
+                                cv2.destroyAllWindows()
+                                print(clase_aux)              
+                                if clase_aux in ['a_verdes','establecimiento_google']:
+                                    clase_aux = areasv_vs_estabgoogle(df_aux, dict_gris)                    
+                                # clase_chinchetas.append(clase_aux)
+                                clase_chinchetas += [clase_aux]
+                                print(clase_chinchetas)
+                                umbrales.append(umbral_aux)
+                                sizes.append(n_aux)                            
+
                             if df_cache['Tipo'][cs_1]=='casa':
                                 if np.sum(df_aux)>500:
                                     casas.append(rotacion_detect(df_cache.loc[cs_1,'start_point_100'], df_cache.loc[cs_1,'end_point_100'],-angulo,proyecciones,w,h,dim))
@@ -487,4 +509,16 @@ def padding(img):
             x_center:x_center+old_image_width] = img
     except:
         result=img 
-    return result        
+    return result  
+
+def cortar_deteccion_municipio(shp_municipio,shp_deteccion,output_path,buffer=20):
+    """
+    Funcion para cortar las detecciones unicamente dentro de municipo 
+    """
+    municipio=gpd.read_file(shp_municipio)
+    municipio=municipio.to_crs(3857)
+    municipio_r=cascaded_union(municipio["geometry"].buffer(buffer))
+    deteccion=gpd.read_file(shp_deteccion)
+    deteccion=deteccion.to_crs(3857)
+    deteccionsobremun=deteccion[[municipio_r.contains(x) for x in deteccion["geometry"].centroid]]
+    deteccionsobremun.to_file(output_path)      
