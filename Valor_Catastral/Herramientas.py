@@ -579,3 +579,15 @@ def cruzar_chinchetas_vs_dnue(path_chinchetas,path_dnue,municipio=None,dist_max=
         print('Chinchetas falta por encontrar: ', gdf_ch[gdf_ch.id.fillna('vacio')=='vacio'].shape[0])
         print('Total chichentas              : ', gdf_ch.shape[0])
     return gdf_ch
+
+
+def agrupacion_cols(cruce1, cols_agg, by='geometry'):
+    # Hacemos todo str menos la geometry para agrupar
+    dict_agg = {}
+    for col in cols_agg:
+        dict_agg[col] = '|'.join
+        cruce1[col] = cruce1[col].astype(str)
+
+    # Agrupamos para concatenar los datos duplicados de cada geometria
+    cruce1_ = cruce1.groupby(by, as_index=False,sort=False).agg(dict_agg)
+    return cruce1_
