@@ -11,6 +11,8 @@ from scipy.spatial import cKDTree
 from shapely.geometry import Point
 from dataprep.clean import clean_lat_long
 from dask.dataframe import from_pandas
+import numpy as np
+
 '''Integración de todos los elementos necesarios para el prep de bases geo y con clave catastral'''
 
 diccionarios= {'Naucalpan':
@@ -273,24 +275,22 @@ class prep:
 
         return(test_igecem.tail(5000))
     
+    
+    def ckdnearest(gdA, gdB):
+        gdA.reset_index(drop=True, inplace=True)
+        gdB.reset_index(drop=True, inplace=True)
+        nA = np.array(list(gdA.geometry.apply(lambda x: (x.x, x.y))))
+        nB = np.array(list(gdB.geometry.apply(lambda x: (x.x, x.y))))
+        btree = cKDTree(nB)
+        dist, idx = btree.query(nA, k=1)
+        gdB_nearest = gdB.iloc[idx].drop(columns="geometry").reset_index(drop=True)
 
+        gdf = pd.concat(
+            [
+                gdA.reset_index(drop=True),
+                gdB_nearest,
+                pd.Series(dist, name='min_dist')
+            ],
+            axis=1)
 
-
-def ckdnearest(gdA, gdB):
-    gdA.reset_index(drop=True, inplace=True)
-    gdB.reset_index(drop=True, inplace=True)
-    nA = np.array(list(gdA.geometry.apply(lambda x: (x.x, x.y))))
-    nB = np.array(list(gdB.geometry.apply(lambda x: (x.x, x.y))))
-    btree = cKDTree(nB)
-    dist, idx = btree.query(nA, k=1)
-    gdB_nearest = gdB.iloc[idx].drop(columns="geometry").reset_index(drop=True)
-
-    gdf = pd.concat(
-        [
-            gdA.reset_index(drop=True),
-            gdB_nearest,
-            pd.Series(dist, name='min_dist')
-        ],
-        axis=1)
-
-    return gdf
+        return gdf
