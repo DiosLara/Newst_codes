@@ -5,7 +5,8 @@ from tkinter import *
 import shutil
 import rasterio
 import tqdm
-import pandas as pd 
+import pandas as pd
+import geopandas as gpd
 import rasterio
 import os
 import rasterio.mask
@@ -319,5 +320,34 @@ def clasificacion_images(carpeta_imagenes_leer:str, carpeta_images_move:str):
         except Exception as e:
             print('El diccionario debe tener al menos 7 elementos',e)
             pass
+def obtener_curt(data:gpd.GeoDataFrame, geom_col:str):
+    '''
+    (Function)
+        Función que recibe un gdf y devuelve el mismo geodata con la clave unica de registro territorial
+        en formato latitud(10 dígitos) + longitud(10 dígitos)
+    (Parameters)
+        - data    : GeoDataFrame al cual se le obtendrán las curt
+        - geom_col: Str del nombre de la columna la cual contiene los polígonos 
+    
+    '''
+    def convert_to_dms(coord):
+        '''
+    (Function)
+        Funcion interna que recibe una coordenada y devuelve la misma pero en formato
+        str de la forma: grados + minutos + segundos + diezmilesimas de segundo
+    (Parameters)
+        - coord: Coordenadas del centroide     
+    '''
+        degrees = int(coord)
+        minutes = int((coord - degrees) * 60)
+        seconds = int(((coord - degrees) * 60 - minutes) * 60)
+        milliseconds = int((((coord - degrees) * 60 - minutes) * 60 - seconds) * 10000)
+        return str(abs(degrees)).zfill(2)+str(abs(minutes)).zfill(2)+str(abs(seconds)).zfill(2)+str(abs(milliseconds)).zfill(4)
+
+    data['centroid'] = data[geom_col].to_crs(4326).centroid
+    data['lat'] = data['centroid'].y
+    data['lon'] = data['centroid'].x
+    data['CURT_f'] = data['lat'].apply(convert_to_dms)+data['lon'].apply(convert_to_dms)
+    return data
 
 
