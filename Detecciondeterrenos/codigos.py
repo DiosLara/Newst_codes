@@ -348,6 +348,6 @@ def obtener_curt(data:gpd.GeoDataFrame, geom_col:str):
     data['lat'] = data['centroid'].y
     data['lon'] = data['centroid'].x
     data['CURT_f'] = data['lat'].apply(convert_to_dms)+data['lon'].apply(convert_to_dms)
-    return data
+    return data.drop(columns=['centroid','lat','lon'])
 
 
