@@ -276,21 +276,29 @@ class prep:
         return(test_igecem.tail(5000))
     
     
-    def ckdnearest(gdA, gdB):
+    def ckdnearest(gdA, gdB, k=1):
+        # gdA= puntos
+        # gdB=puntos[['geometry']]
+        # k=2
         gdA.reset_index(drop=True, inplace=True)
         gdB.reset_index(drop=True, inplace=True)
         nA = np.array(list(gdA.geometry.apply(lambda x: (x.x, x.y))))
         nB = np.array(list(gdB.geometry.apply(lambda x: (x.x, x.y))))
         btree = cKDTree(nB)
-        dist, idx = btree.query(nA, k=1)
+        dist, idx = btree.query(nA, k= [k])
+        if k>1:
+            idx=idx.T[0]
+            dist=dist.T[0]
         gdB_nearest = gdB.iloc[idx].drop(columns="geometry").reset_index(drop=True)
 
         gdf = pd.concat(
             [
                 gdA.reset_index(drop=True),
                 gdB_nearest,
-                pd.Series(dist, name='min_dist')
+                pd.Series(dist, name='min_dist_2')
             ],
             axis=1)
 
         return gdf
+    
+    
