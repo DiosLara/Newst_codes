@@ -85,3 +85,10 @@ def combine_cols(casas:gpd.GeoDataFrame, col_left, col_right, priority=None):
     # Borramos las columnas left y right
     casas.drop([col_left, col_right],axis=1,inplace=True)
     return casas
+
+def clean_base_z(base_z):
+    base_z['area']=base_z.geometry.area
+    base_z=base_z[['ID_casas', 'clase_dete', 'Clase', 'id_cat','curt', 'CURT_f','ID_ind','ID_curt','CURT_si','dupGEO', 
+             'dupCURT', 'YOLO_si','Ind_si','Induxcasa','ID_chin','ID_denue', 'ID_15m', 'Z','geometry','area',]]
+    return base_z
+    
