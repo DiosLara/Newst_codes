@@ -44,3 +44,44 @@ def obtener_curt(data:gpd.GeoDataFrame, geom_col:str):
     data['lon'] = data['centroid'].x
     data['CURT_f'] = data['lat'].apply(convert_to_dms)+data['lon'].apply(convert_to_dms)
     return data.drop(columns=['centroid','lat','lon'])
+
+def combine_cols(casas:gpd.GeoDataFrame, col_left, col_right, priority=None):
+    
+    # Revisamos que tengan el _ para no generar errores el nombre de las columnas
+    if not col_right.find('_')>0:
+        col_right1 = col_right+'_right'
+        casas[col_right1] = casas[col_right]
+        col_right = col_right1
+    
+    if not col_left.find('_')>0:
+        col_left1 = col_left + '_left'
+        casas[col_left1] = casas[col_left]
+        col_left = col_left1
+        
+
+    # El nombre de la columna nueva sera sin el _
+    if len(col_left.lower().split('_')) >2:
+        new_nombre = '_'.join(col_left.lower().split('_')[0:-1])
+    else:
+        new_nombre = col_left.lower().split('_')[0]
+    
+    # Definimos la prioridad sobre el cual se hara el combine first
+    
+    ## La prioridad es tener la menor cantidad de Nans
+    if priority == None:
+        if casas[col_right].combine_first( casas[col_left]).fillna(0).value_counts()[0] >= casas[col_left].combine_first( casas[col_right]).fillna(0).value_counts()[0]:
+            casas[new_nombre] = casas[col_left].combine_first( casas[col_right])
+        else:
+            casas[new_nombre] = casas[col_right].combine_first( casas[col_left])
+    
+    ## La prioridad es la columna left
+    elif priority.lower() == 'left':
+        casas[new_nombre] = casas[col_left].combine_first( casas[col_right])
+    
+    ## La prioridad es la columna right
+    elif priority.lower() == 'right':
+        casas[new_nombre] = casas[col_right].combine_first( casas[col_left])
+        
+    # Borramos las columnas left y right
+    casas.drop([col_left, col_right],axis=1,inplace=True)
+    return casas
