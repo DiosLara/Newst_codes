@@ -45,7 +45,20 @@ def obtener_curt(data:gpd.GeoDataFrame, geom_col:str):
     data['CURT_f'] = data['lat'].apply(convert_to_dms)+data['lon'].apply(convert_to_dms)
     return data.drop(columns=['centroid','lat','lon'])
 
-def combine_cols(casas:gpd.GeoDataFrame, col_left, col_right, priority=None):
+def combine_cols(casas:gpd.GeoDataFrame, col_left, col_right, priority=None, new_col=None):
+    '''
+    (Function)
+
+    (Parameters)
+        - casas; [GeoDataFrame] Contiene las columnas que se van a combinar
+        - col_left; [str] Nombre de la columna que se tomara como left, de este nombre se obtiene el nuevo 
+                         nombre de la columna, en caso de no especificar "new_col"
+        - col_right; [str] Nombre de la columna que se tomara como right
+        - priority; [str] En caso de ser None La prioridad sera tener menos nulos, pero puede especificar 
+                    'left' o 'right' para dar una prioridad a las columnas
+        - new_col; [str] Por default toma col_left para generar el nuevo nombre de la columna,  pero en caso de 
+                        querer un nombre particular, especificarlo aqui.
+    '''
     
     # Revisamos que tengan el _ para no generar errores el nombre de las columnas
     if not col_right.find('_')>0:
@@ -58,12 +71,15 @@ def combine_cols(casas:gpd.GeoDataFrame, col_left, col_right, priority=None):
         casas[col_left1] = casas[col_left]
         col_left = col_left1
         
-
-    # El nombre de la columna nueva sera sin el _
-    if len(col_left.lower().split('_')) >2:
-        new_nombre = '_'.join(col_left.lower().split('_')[0:-1])
+    if new_col == None:
+        # El nombre de la columna nueva en caso de no definirla sera:
+        if len(col_left.lower().split('_')) >2:
+            new_nombre = '_'.join(col_left.lower().split('_')[0:-1])
+        else:
+            new_nombre = col_left.lower().split('_')[0]
     else:
-        new_nombre = col_left.lower().split('_')[0]
+        # El nombre de la nueva columnas ya esta definido
+        new_nombre = new_col
     
     # Definimos la prioridad sobre el cual se hara el combine first
     
