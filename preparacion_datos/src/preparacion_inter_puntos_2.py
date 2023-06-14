@@ -255,7 +255,7 @@ def ckdnearest(gdA, gdB):
         [
             gdA.reset_index(drop=True),
             gdB_nearest,
-            pd.Series(dist, name='min_dist')
+            pd.Series(dist, name='min_dist_2')
         ],
         axis=1)
 

@@ -84,8 +84,8 @@ class prep:
             str).str[4:6].astype(str) + str('.') + base_shp['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''N")
         base_shp['Longitude'] = base_shp['LON_DMS'].astype(str).str[0:2].str.cat(base_shp['LON_DMS'].astype(str).str[2:4], '°').str.cat(base_shp['LON_DMS'].astype(
             str).str[4:6].astype(str) + str('.') + base_shp['LAT_DMS'].astype(str).str[6:].astype(str).str.replace('.0', '', regex=False), "'") + str("''W")
-
-        pi = clean_lat_long(base_shp[['Latitude','Longitude']], lat_col="Latitude",
+        curts_chunks = from_pandas(base_shp, npartitions=20)
+        pi = clean_lat_long(curts_chunks[['Latitude','Longitude']], lat_col="Latitude",
                             long_col="Longitude", split=True)
         try: 
             base_shp.drop(columns=['Longitude','Latitude'], inplace=True)
@@ -273,7 +273,7 @@ class prep:
         # test_igecem=test_igecem.loc[test_igecem['CLAVESXPREDIO']>1]
         
 
-        return(test_igecem.tail(5000))
+        return(test_igecem)
     
     
     def ckdnearest(gdA, gdB, k=1):
