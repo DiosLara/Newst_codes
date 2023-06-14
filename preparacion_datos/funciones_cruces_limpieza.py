@@ -44,3 +44,67 @@ def obtener_curt(data:gpd.GeoDataFrame, geom_col:str):
     data['lon'] = data['centroid'].x
     data['CURT_f'] = data['lat'].apply(convert_to_dms)+data['lon'].apply(convert_to_dms)
     return data.drop(columns=['centroid','lat','lon'])
+
+def combine_cols(casas:gpd.GeoDataFrame, col_left, col_right, priority=None, new_col=None):
+    '''
+    (Function)
+
+    (Parameters)
+        - casas; [GeoDataFrame] Contiene las columnas que se van a combinar
+        - col_left; [str] Nombre de la columna que se tomara como left, de este nombre se obtiene el nuevo 
+                         nombre de la columna, en caso de no especificar "new_col"
+        - col_right; [str] Nombre de la columna que se tomara como right
+        - priority; [str] En caso de ser None La prioridad sera tener menos nulos, pero puede especificar 
+                    'left' o 'right' para dar una prioridad a las columnas
+        - new_col; [str] Por default toma col_left para generar el nuevo nombre de la columna,  pero en caso de 
+                        querer un nombre particular, especificarlo aqui.
+    '''
+    
+    # Revisamos que tengan el _ para no generar errores el nombre de las columnas
+    if not col_right.find('_')>0:
+        col_right1 = col_right+'_right'
+        casas[col_right1] = casas[col_right]
+        col_right = col_right1
+    
+    if not col_left.find('_')>0:
+        col_left1 = col_left + '_left'
+        casas[col_left1] = casas[col_left]
+        col_left = col_left1
+        
+    if new_col == None:
+        # El nombre de la columna nueva en caso de no definirla sera:
+        if len(col_left.lower().split('_')) >2:
+            new_nombre = '_'.join(col_left.lower().split('_')[0:-1])
+        else:
+            new_nombre = col_left.lower().split('_')[0]
+    else:
+        # El nombre de la nueva columnas ya esta definido
+        new_nombre = new_col
+    
+    # Definimos la prioridad sobre el cual se hara el combine first
+    
+    ## La prioridad es tener la menor cantidad de Nans
+    if priority == None:
+        if casas[col_right].combine_first( casas[col_left]).fillna(0).value_counts()[0] >= casas[col_left].combine_first( casas[col_right]).fillna(0).value_counts()[0]:
+            casas[new_nombre] = casas[col_left].combine_first( casas[col_right])
+        else:
+            casas[new_nombre] = casas[col_right].combine_first( casas[col_left])
+    
+    ## La prioridad es la columna left
+    elif priority.lower() == 'left':
+        casas[new_nombre] = casas[col_left].combine_first( casas[col_right])
+    
+    ## La prioridad es la columna right
+    elif priority.lower() == 'right':
+        casas[new_nombre] = casas[col_right].combine_first( casas[col_left])
+        
+    # Borramos las columnas left y right
+    casas.drop([col_left, col_right],axis=1,inplace=True)
+    return casas
+
+def clean_base_z(base_z):
+    base_z['area']=base_z.geometry.area
+    base_z=base_z[['ID_casas', 'clase_dete', 'Clase', 'id_cat','curt', 'CURT_f','ID_ind','ID_curt','CURT_si','dupGEO', 
+             'dupCURT', 'YOLO_si','Ind_si','Induxcasa','ID_chin','ID_denue', 'ID_15m', 'Z','geometry','area',]]
+    return base_z
+    
