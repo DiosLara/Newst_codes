@@ -395,24 +395,24 @@ def task_chunks(chunks):
    
         tot.reset_index(drop=True, inplace=True)
         tot['ORDEN'] = tot.index +1
-        try:
-            nm = tot.geometry.apply(lambda g: tot.distance(g))
-            for column in nm.columns:
-                nm.loc[nm[column]==0,column]= float('NaN')
-            zz= nm.min(axis=0)
-            for orden in zz.index +1: 
-                tot.loc[tot['ORDEN']== orden, 'min_dist']= zz[orden-1]
-            t1= tot.loc[tot['min_dist']>=10]
-            t2= tot.loc[(tot['min_dist']<10) & (tot['min_dist']>5.2) & (tot['min_dist'].duplicated())].sort_values(['ORDEN'])
-            n= t2.shape[0]
-            t2=t2.head(int(n/2))
-            total=pd.concat([t1,t2], axis=0)
-            # print('dentro del try:  ',total.columns[total.columns.duplicated()])
-            df_final = pd.concat([total,df_final], axis=0)
-        except:
+        # try:
+        #     nm = tot.geometry.apply(lambda g: tot.distance(g))
+        #     for column in nm.columns:
+        #         nm.loc[nm[column]==0,column]= float('NaN')
+        #     zz= nm.min(axis=0)
+        #     for orden in zz.index +1: 
+        #         tot.loc[tot['ORDEN']== orden, 'min_dist']= zz[orden-1]
+        #     t1= tot.loc[tot['min_dist']>=10]
+        #     t2= tot.loc[(tot['min_dist']<10) & (tot['min_dist']>5.2) & (tot['min_dist'].duplicated())].sort_values(['ORDEN'])
+        #     n= t2.shape[0]
+        #     t2=t2.head(int(n/2))
+        #     total=pd.concat([t1,t2], axis=0)
+        #     # print('dentro del try:  ',total.columns[total.columns.duplicated()])
+        #     df_final = pd.concat([total,df_final], axis=0)
+        # except:
             # print('fuera del try:  ',tot.columns[tot.columns.duplicated()])
-            df_final = pd.concat([tot,df_final], axis=0)
-            pass
+        df_final = pd.concat([tot,df_final], axis=0)
+     
         
         # break  ##Quitar esta linea, solo funcional para test
           
@@ -438,7 +438,7 @@ def post_points_catastro(path_base, path_shp, funcion):
     prep.replace_columns(test_igecem)
     test_igecem.drop(columns= test_igecem.columns[(test_igecem.columns.str.contains('index'))|(test_igecem.columns.duplicated())], inplace=True)
     # print('test_igecem:  ',test_igecem.columns[test_igecem.columns.duplicated()])
-    test_igecem_chunks =  np.array_split(test_igecem, os.cpu_count()-1) ##Aqui se especifica si se requiere un loc y los chunks
+    test_igecem_chunks =  np.array_split(test_igecem, 1) ##Aqui se especifica si se requiere un loc y los chunks
     
     df_concat = pd.DataFrame()
 
