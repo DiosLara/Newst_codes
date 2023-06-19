@@ -1,5 +1,38 @@
 import pandas as pd
 import geopandas as gpd
+def combine_first_drop(gdf):
+    for i in (gdf.columns):
+        if str('_1') in i :
+            n = i
+        if str('_2') in i :
+            k = i
+            z = i[:i.rfind('_1')-1]
+            gdf[z] = gdf[n]
+            gdf.drop(columns=[n,k],inplace=True)
+        else:
+            pass
+def delete_empty(df):
+
+    for i in df.columns:
+        df.loc[(df[i] =="") |(df[i] =="0") | (df[i] ==0) | (df[i].isna()) | (df[i] ==" " ), i]=float('Nan')
+    df.dropna(axis=1, how='all', inplace=True)
+    
+    return df 
+def separar_digitos(prueba):
+
+    prueba.CLAVECATASTRAL = prueba.CLAVECATASTRAL.astype(str)
+    for i in prueba.CLAVECATASTRAL:
+        if str('000000') in i:
+            cat = i
+            cat=cat[:-6]
+            prueba.loc[prueba.CLAVECATASTRAL== i, 'CLAVE_CATASTRAL']=cat
+        elif str('00000000') in i :
+            cat2=i
+            cat2=cat2[:-8]
+            prueba.loc[prueba.CLAVECATASTRAL== i, 'CLAVE_CATASTRAL']=cat2
+        else:
+            pass
+
 def choose_city(gdf_zonas):
     '''
         Función para localizar el municipio a tratar dentro del shape de zonas rurales y urbanas
