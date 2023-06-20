@@ -285,7 +285,7 @@ class prep:
         nA = np.array(list(gdA.geometry.apply(lambda x: (x.x, x.y))))
         nB = np.array(list(gdB.geometry.apply(lambda x: (x.x, x.y))))
         btree = cKDTree(nB)
-        dist, idx = btree.query(nA, k= [k])
+        dist, idx = btree.query(nA, k= k)
         if k>1:
             idx=idx.T[0]
             dist=dist.T[0]
