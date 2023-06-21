@@ -350,4 +350,38 @@ def obtener_curt(data:gpd.GeoDataFrame, geom_col:str):
     data['CURT_f'] = data['lat'].apply(convert_to_dms)+data['lon'].apply(convert_to_dms)
     return data.drop(columns=['centroid','lat','lon'])
 
+def split_images_directory(alto,ancho,raster,minx,maxx,miny,maxy,shape,dim,path_mosaico_salida,correct_orientation,src):
+    generar_imagenes=int(input("Generar imagenes: 1 si, 0 no "))
+    if generar_imagenes==1:
+        generar_imagenes_sinrotar=int(input("Generar imagenes sin rotar: 1 si, 0 no "))
+        generar_imagenes_rotadas=int(input("Generar imagenes rotadas: 1 si, 0 no "))
+        with tqdm.tqdm(total=alto*ancho) as pbar:
+            for j in range(0,ancho):#ancho
+                for i in (range(alto)):#alto
+                    generar=0
+                    label=raster.replace("\\","/").split("/")[-1][:-4]+"_"
+                    nameimg=label.lower()+str(i)+"_"+str(j)
+                    cuadro=[]
+                    for k in range(2):
+                        for l in range(2):
+                            cuadro.append((minx+(maxx-minx)/ancho*(j+k),
+                                        maxy-(maxy-miny)/alto*(i+l),
+                                        0.0))
+                    cuadro=[cuadro[0],cuadro[1],cuadro[3],cuadro[2],cuadro[0]]
+                    for punto in cuadro:
+                        x=float(punto[0])
+                        y=float(punto[1])
+                        if len(shape[(shape[0]<=x)&(shape[2]>=x)&(shape[1]<=y)&(shape[3]>=y)])>0:
+                            generar=1
+                    if generar==1:
+                        shapes=[{"type":'Polygon','coordinates':[cuadro]}]
+                        array, out_transform = rasterio.mask.mask(src, shapes, crop=True)
+                        four_images=[array[2],array[1],array[0]]
+                        imagen_n = np.stack(four_images, axis=-1)
+                        if generar_imagenes_sinrotar==1:
+                            cv2.imwrite(path_mosaico_salida+nameimg+".png",imagen_n)
+                        if generar_imagenes_rotadas==1:
+                            angulo_1,imagen_ro=correct_orientation(imagen_n,dim)
+                            cv2.imwrite(path_mosaico_salida+nameimg+"_"+str(angulo_1)+".png",imagen_ro)
+                    pbar.update(1)
 
