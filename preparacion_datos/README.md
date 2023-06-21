@@ -1,12 +1,14 @@
 # Cruces necesarios para preparar las bases
 El orden en que deben usar los notebooks son:
 
-1) cruce_curtxcasas; Esto es para obtener los CURTS que ya tenemos y rescatarlos, ademas de incluir otro cruce con la base de industrias para tenerlas identificarlas.
+1) Hacer crucesxpredial, se cruza CURT x predial obteniendo los montos correspondientes al año de interés.
 
-2) Cruces_limpieza_casas; Hace una serie de cruces para identificar zonas de interes, como ejes, areas verdes, etc.
+2) Cruces_limpieza_casas; Hace una serie de cruces para identificar y obtener los CURT, industrias y zonas de interes, como ejes, areas verdes, etc.
 
-3) Cruces_limpieza_terrenos; Una similitud con Cruces_limpieza_casas solo que se aplica a la deteccion de yolo que es de terrenos 
+3) Cruces_limpieza_terrenos; Una similitud con Cruces_limpieza_casas solo que se aplica a la detección de yolo que es de terrenos.
 
-4) Hacer predial, el codigo aun se esta mejorando; Se cruza CURT x mzns obteniendo los deudores y pagadores de un año determinado.
+4) Limpieza_bases; Sirve para limpiar las columnas que se dejarán en la base de entrega final.
 
-Al final de aplicar estos notebooks obtendremos 2 shapes. Uno de casas y otro de terrenos. Para posteriormente aplicar el valor Z, y estara listo para obtener el valor catastral
+
+
+Al final de aplicar estos notebooks obtendremos 2 shapes. Uno de casas y otro de terrenos. Para posteriormente aplicar el valor Z, y estará listo para obtener el valor catastral
