@@ -54,22 +54,11 @@ if __name__ == "__main__":
     # load_dotenv(dotenv_path='E:/dsanchez/padagua_2021/env')
     # BASE_FOLDER = os.getenv("BASE_FOLDER")
     # BASE_CORR = BASE_FOLDER + "/BASE_CORRECCIONES/"
-    base_folder = r'C:\Users\dlara\padagua_2021\Geolocalizacion\reverse_geocode\src'
+    base_folder = r'src'
     # # print(base_folder)
-    cities_files = glob.glob(r"C:\Users\dlara\padagua_2021\Geolocalizacion\reverse_geocode\src\Municipios_proceso_1")
+    cities_files = glob.glob(r"src\1")
 
-    # print(cities_files)
-
-    # Si no existe el directorio para guardar los resultados, creamos uno
-    # try:
-    #     os.mkdir("/Municipios_proceso_1/")
-    # except: 
-    #     pass
-    # try :
-    #     os.mkdir("C:/Users/dlara/Documents/Geometria_Prueba/Municipios_procesado_1/")
-    # except: 
-    #     pass
-
+    
     # Instanciamos el geocoder que usaremos para todas las requests
     
     lista_apis = "C:/Users/dlara/lista.txt" ## Ruta de la lista de Apis

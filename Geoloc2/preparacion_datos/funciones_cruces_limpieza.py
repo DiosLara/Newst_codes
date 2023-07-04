@@ -25,11 +25,11 @@ def separar_digitos(prueba):
         if str('000000') in i:
             cat = i
             cat=cat[:-6]
-            prueba.loc[prueba.CLAVECATASTRAL== i, 'CLAVE_CATASTRAL']=cat
+            prueba.loc[prueba.CLAVECATASTRAL== i, 'ID_2']=cat
         elif str('00000000') in i :
             cat2=i
             cat2=cat2[:-8]
-            prueba.loc[prueba.CLAVECATASTRAL== i, 'CLAVE_CATASTRAL']=cat2
+            prueba.loc[prueba.CLAVECATASTRAL== i, 'ID_2']=cat2
         else:
             pass
 
@@ -137,7 +137,6 @@ def combine_cols(casas:gpd.GeoDataFrame, col_left, col_right, priority=None, new
 
 def clean_base_z(base_z):
     base_z['area']=base_z.geometry.area
-    base_z=base_z[['ID_casas', 'clase_dete', 'Clase', 'id_cat','curt', 'CURT_f','ID_ind','ID_curt','CURT_si','dupGEO', 
-             'dupCURT', 'YOLO_si','Ind_si','Induxcasa','ID_chin','ID_denue', 'ID_15m', 'Z','geometry','area',]]
+    base_z=base_z[[]]
     return base_z
     

@@ -264,18 +264,17 @@ def clasificacion_images(carpeta_imagenes_leer:str, carpeta_images_move:str):
     (Paramaters)
         - carpeta_imagenes_leer: Ruta de la carpeta que tiene imágenes, no poner último slash
         - carpeta_images_move: Ruta de la carpeta a donde quiere que se vayan las imágenes.
-    (Author)
-        - Hector Limon & Fernanda Peñuelas
+
     (Example)
         carpeta_imagenes_leer = '/home/hector/Imágenes/Screenshots' #Carpeta inicial
         diccionario: 
         folders = {    
-        'carpeta_images_move_auto' : r"H:\.shortcut-targets-by-id\1sAMR22XRKV96FFQI8LwPvsm4LWzp9sDA\alexnet_ultimo\train\carros",
-        'carpeta_images_move_casas': r"H:\.shortcut-targets-by-id\1sAMR22XRKV96FFQI8LwPvsm4LWzp9sDA\alexnet_ultimo\train\casas",
-        'carpeta_images_move_multi' : r"H:\.shortcut-targets-by-id\1sAMR22XRKV96FFQI8LwPvsm4LWzp9sDA\alexnet_ultimo\train\multivivienda",
-        'carpeta_images_move_estab' : r"H:\.shortcut-targets-by-id\1sAMR22XRKV96FFQI8LwPvsm4LWzp9sDA\alexnet_ultimo\train\establecimiento",
-        'carpeta_images_move_const' : r"H:\.shortcut-targets-by-id\1sAMR22XRKV96FFQI8LwPvsm4LWzp9sDA\alexnet_ultimo\train\en_construccion",
-        'carpeta_images_move_terreno' : r"H:\.shortcut-targets-by-id\1sAMR22XRKV96FFQI8LwPvsm4LWzp9sDA\alexnet_ultimo\train\terreno_baldio",
+        'carpeta_images_move_auto' : r"\alexnet_ultimo\train\carros",
+        'carpeta_images_move_casas': r"\alexnet_ultimo\train\casas",
+        'carpeta_images_move_multi' : r"\alexnet_ultimo\train\multivivienda",
+        'carpeta_images_move_estab' : r"\alexnet_ultimo\train\establecimiento",
+        'carpeta_images_move_const' : r"\alexnet_ultimo\train\en_construccion",
+        'carpeta_images_move_terreno' : r"\alexnet_ultimo\train\terreno_baldio",
         'Basura':''
         }
 
