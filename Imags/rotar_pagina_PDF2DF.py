@@ -1,8 +1,5 @@
 '''
-Rotar Página PDF
-por Héctor Limón
 
-Recomendable correrlo en Google Collab con GPU.
 Tener estas librerias previo a su ejecución:
 !pip install PyPDF2
 
