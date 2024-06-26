@@ -11,7 +11,7 @@ reader=easyocr.Reader(["es"],gpu=True)
 def PDF2DF(images, file_name: str="", route: str="", name: str="", name_table:str="", hoja: int = 0,to_sql=True) -> None:
     """
         (Function)
-        Esta función es para convertir un PDF a imágenes y después guarda a un sql.
+        Esta funcion es para convertir un PDF a imágenes y después guarda a un sql.
 
         (Parameters)
         images: La imagén procesada de pdf2images que utiliza PILLOW por detrás.
@@ -52,7 +52,7 @@ def PDF2DF(images, file_name: str="", route: str="", name: str="", name_table:st
 def run_script_PDF2DF(files: list, route: str, namedb: str, name_table: str, pages_end: int, pages_start: int =0) -> None:
   """
     (Function)
-      Esta función es para correr de manera iterativa la función PDF2DF.
+      Esta funcion es para correr de manera iterativa la función PDF2DF.
     
     (Parameters)
     files: una lista de archivos a utilizar.
