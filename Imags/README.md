@@ -91,21 +91,4 @@ from Acta_Fallo_JC import Junta_Caminos_compranet
 
 La clase esta diseñada para seguir aprendiendo, por lo que es necesario estar alimentando (Cuando se necesite) constantemente con nuevas *keywords* para sus archivos que lo necesiten.
 
-## Limpieza 
-
-Luego de haber extraído la información, se debieron juntar todos los diferentes tipos de archivos en un solo DataFrame, además de hacer una limpieza general en todos los campos(ver funciones en grupo Full_Limpieza)
-
-```python
-Poner ejemplo del corrector ortografico.
-```
-
-## Validación
-
-En este punto es donde se hizo mucha corrección manual, e incluso en más de una vez se tuvo que regresar al procesamiento OCR. La mejor manera de hacer dicha corrección fue en *[google sheets](https://www.google.com/sheets/about/)*, ya que es una buena alternativa para dividir la revisión y cargarla en tiempo real para todos.
-Además, para poder tener una base más robusta y presentable, se realizó un código con correción ortográfica.
-
-**Explicación de código de corrección ortográfica**
-
-```python
-Código corrección ortográfica?
 ```
